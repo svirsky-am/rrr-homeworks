@@ -84,7 +84,6 @@ mod tests {
             OutputParserFormat::Mt940,
         );
 
-
         let _result_4 = parse_input_and_serialize_via_trait(
             File::open(Path::new(&TestConstants::take_sample_file(
                 "MT940_github_1.mt940".to_string(),

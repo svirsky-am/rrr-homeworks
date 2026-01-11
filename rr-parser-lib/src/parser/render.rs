@@ -371,7 +371,10 @@ pub fn render_content_as_mt940(
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let mut iner_result_content = String::new();
     for cash_statement_data in &input_vec {
-        let _date_of_statemant = cash_statement_data.creation_time.clone().expect("Can't get datetime of Balance.");
+        let _date_of_statemant = cash_statement_data
+            .creation_time
+            .clone()
+            .expect("Can't get datetime of Balance.");
         let account_id = &cash_statement_data.id;
         let bank_maintainer = &cash_statement_data.bank_maintainer;
 
@@ -384,7 +387,10 @@ pub fn render_content_as_mt940(
             .format("%y%m%d")
             .to_string();
 
-        let opening_balance = &cash_statement_data.opening_balance.clone().expect("Can't get datetime of Balance.");
+        let opening_balance = &cash_statement_data
+            .opening_balance
+            .clone()
+            .expect("Can't get datetime of Balance.");
         let open_balance_amount = opening_balance.amount.to_string().replace(".", ",");
         let open_balance_data = opening_balance.date.format("%y%m%d").to_string();
         let open_balance_currency = &opening_balance.currency;
@@ -416,7 +422,10 @@ pub fn render_content_as_mt940(
             ));
         }
 
-        let closing_balance = &cash_statement_data.closing_balance.clone().expect("Can't get clising Balance.");
+        let closing_balance = &cash_statement_data
+            .closing_balance
+            .clone()
+            .expect("Can't get clising Balance.");
         let closing_balance_amount = closing_balance.amount.to_string().replace(".", ",");
         let closing_balance_data = closing_balance.date.format("%y%m%d").to_string();
         let closing_balance_currency = &closing_balance.currency;
@@ -455,7 +464,12 @@ fn format_russian_naive_date(input_date: NaiveDate) -> String {
         "ноября",
         "декабря",
     ];
-    let m_index = input_date.month().to_string().parse::<usize>().expect("Can't parse date as russian fromat.") - 1;
+    let m_index = input_date
+        .month()
+        .to_string()
+        .parse::<usize>()
+        .expect("Can't parse date as russian fromat.")
+        - 1;
     let month_name = MONTHS[m_index];
     format!(
         "{:02} {} {}",
@@ -470,7 +484,10 @@ pub fn render_content_as_csv_extra_fin(
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let mut iner_result_content = String::new();
     for cash_statement_data in &input_vec {
-        let datetime_of_statemant = cash_statement_data.creation_time.clone().expect("Can't get datetime of Balance.");
+        let datetime_of_statemant = cash_statement_data
+            .creation_time
+            .clone()
+            .expect("Can't get datetime of Balance.");
         let creation_date = &datetime_of_statemant.format("%d.%m.%Y").to_string();
         let creation_datetime = &datetime_of_statemant
             .format("%d.%m.%Y в %H:%M:%S")
@@ -523,12 +540,20 @@ pub fn render_content_as_csv_extra_fin(
             }
         }
         wtr.flush().expect("Can't flush CSV data to output buff.");
-        let csv_bytes = wtr.into_inner().expect("Can't convert buff with CSV content  to raw bytes.");
+        let csv_bytes = wtr
+            .into_inner()
+            .expect("Can't convert buff with CSV content  to raw bytes.");
         let csv_string = String::from_utf8(csv_bytes).expect("Can't convert raw bytes to String.");
         iner_result_content.push_str(&csv_string);
-        let opening_balance = &cash_statement_data.opening_balance.clone().expect("Can't get info of Balance.");
+        let opening_balance = &cash_statement_data
+            .opening_balance
+            .clone()
+            .expect("Can't get info of Balance.");
         let open_balance_amount = opening_balance.amount.to_string().replace(".", ",");
-        let closing_balance = &cash_statement_data.closing_balance.clone().expect("Can't get info of Balance.");
+        let closing_balance = &cash_statement_data
+            .closing_balance
+            .clone()
+            .expect("Can't get info of Balance.");
         let closing_balance_amount = closing_balance.amount.to_string().replace(".", ",");
 
         let open_balance_data_format = format_russian_naive_date(opening_balance.date);

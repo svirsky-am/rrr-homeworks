@@ -1,7 +1,5 @@
 use clap::{Arg, Command};
-use rr_parser_lib::{
-    FinConverter, InputParserFormat, OutputParserFormat,
-};
+use rr_parser_lib::{FinConverter, InputParserFormat, OutputParserFormat};
 use std::fs::{self, File};
 use std::io::{self, BufReader, Write};
 use std::path::Path;
@@ -70,8 +68,6 @@ fn parse_input_format_clap(s: &str) -> Result<InputParserFormat, String> {
 fn parse_output_format_clap(s: &str) -> Result<OutputParserFormat, rr_parser_lib::ParseError> {
     s.parse()
 }
-
-
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = parse_cli()?;

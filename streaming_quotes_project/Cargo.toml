@@ -1,0 +1,27 @@
+[package]
+name = "streaming_quotes_project"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["random"]   # Фичи по умолчанию
+random =  ["dep:rand"] # Фича random включает опциональную зависимость rand
+logging = ["dep:log", "dep:env_logger"] # Фича random включает опциональную зависимость log и env_logger
+sqlite = []            # Пример дополнительной фичи
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+bincode = "1.3"
+rand = { version = "0.8", optional = true }  # Опциональная зависимость
+log = { version = "0.4", optional = true } 
+# env_logger, только когда включена фича logging
+env_logger = { version = "0.10", optional = true }
+chrono = "0.4"
+
+[[bin]]
+name = "quote_client"
+path = "bins/quote_client/main.rs"
+
+[[bin]]
+name = "quote_server"
+path = "bins/quote_server/main.rs"

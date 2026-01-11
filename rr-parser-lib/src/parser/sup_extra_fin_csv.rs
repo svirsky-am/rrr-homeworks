@@ -24,7 +24,9 @@ pub fn normalyze_csv_str(input_data: String) -> String {
     work_data
 }
 
-pub fn parsr_csv_str(input_data: String) -> Result<Vec<Transaction>, Box<dyn std::error::Error + Send + Sync>> {
+pub fn parsr_csv_str(
+    input_data: String,
+) -> Result<Vec<Transaction>, Box<dyn std::error::Error + Send + Sync>> {
     let mut transactions = Vec::new();
 
     let mut rdr = ReaderBuilder::new()
@@ -44,8 +46,7 @@ pub fn parsr_csv_str(input_data: String) -> Result<Vec<Transaction>, Box<dyn std
         if date_str.is_empty() {
             continue;
         } // skip empty lines
-        let parsed_date =
-            NaiveDate::parse_from_str(&date_str, "%d.%m.%Y")?;
+        let parsed_date = NaiveDate::parse_from_str(&date_str, "%d.%m.%Y")?;
         let date_time = parsed_date
             .and_hms_opt(0, 0, 0)
             .ok_or("Invalid time (should never happen)")?;
@@ -107,7 +108,6 @@ pub fn parsr_csv_str(input_data: String) -> Result<Vec<Transaction>, Box<dyn std
     }
     Ok(transactions)
 }
-
 
 pub fn write_debug_file(dir: &std::path::Path, name: &str, data: &[u8]) -> std::io::Result<()> {
     let path = dir.join(name);

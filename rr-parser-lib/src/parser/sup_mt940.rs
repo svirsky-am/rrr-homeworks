@@ -1,22 +1,19 @@
 use chrono::{NaiveDate, NaiveDateTime};
+use lazy_regex::{Lazy, lazy_regex};
 use regex::Regex;
 use std::collections::HashMap;
-use lazy_regex::{lazy_regex, Lazy};
-
 
 use crate::parser::{
     Wallet,
-    common::{Balance, BalanceAdjustType, Transaction}, errors::ParseError,
+    common::{Balance, BalanceAdjustType, Transaction},
+    errors::ParseError,
 };
 
 pub static RE_MT940_MSGS_ALL: Lazy<Regex> = lazy_regex!(
     r"[\[\(\{]1\:...(.{1,100})\{2\:.940(\S{1,100})[N]\}.{0,40}\{4\:([^\}]{1,750})-\}\{5.*"
 );
 
-pub static RE_MT940_MSG_LINES: Lazy<Regex> = lazy_regex!(
-    r"(:\d{2}[A-Z]?:)"
-);
-
+pub static RE_MT940_MSG_LINES: Lazy<Regex> = lazy_regex!(r"(:\d{2}[A-Z]?:)");
 
 pub static RE_MT940_TRANSACTIONS_61_86_TR: Lazy<Regex> = lazy_regex!(
     r"(?x)
@@ -26,7 +23,8 @@ pub static RE_MT940_TRANSACTIONS_61_86_TR: Lazy<Regex> = lazy_regex!(
         (?P<transaction_type_code>\w)(?P<bank_transaction_code>.{3})
                 (?P<transaction_id>[\w\/]+)
 [\n\w\s]*\:86\:(?P<description_filed>[.\w\s]*)
-");
+"
+);
 
 ///:61
 /// Value Date: 2009-09-25
@@ -90,7 +88,9 @@ pub fn parse_mt940_alt(input: &str) -> Result<Vec<Wallet>, super::errors::ParseE
         } else if let Some(ref bal) = parsed_closing_balance {
             bal.currency.clone()
         } else {
-            return Err(ParseError::Mt940MissingCapture { field: ":60F: or :62F:" });
+            return Err(ParseError::Mt940MissingCapture {
+                field: ":60F: or :62F:",
+            });
         };
 
         let transactions: Result<Vec<Transaction>, ParseError> = RE_MT940_TRANSACTIONS_61_86_TR
@@ -98,16 +98,15 @@ pub fn parse_mt940_alt(input: &str) -> Result<Vec<Wallet>, super::errors::ParseE
             .map(|caps| {
                 let datetime_str = caps
                     .name("data_time")
-                    .ok_or(ParseError::Mt940MissingCapture {
-                        field: "data_time",
-                    })?
+                    .ok_or(ParseError::Mt940MissingCapture { field: "data_time" })?
                     .as_str();
 
-                let date_time = NaiveDateTime::parse_from_str(datetime_str, "%y%m%d%H%M")
-                    .map_err(|source| ParseError::Mt940DateTimeParse {
+                let date_time = NaiveDateTime::parse_from_str(datetime_str, "%y%m%d%H%M").map_err(
+                    |source| ParseError::Mt940DateTimeParse {
                         value: datetime_str.to_string(),
                         source,
-                    })?;
+                    },
+                )?;
 
                 let debit_credit_str = caps
                     .name("debit_credit")
@@ -128,9 +127,7 @@ pub fn parse_mt940_alt(input: &str) -> Result<Vec<Wallet>, super::errors::ParseE
 
                 let amount_str = caps
                     .name("amount")
-                    .ok_or(ParseError::Mt940MissingCapture {
-                        field: "amount",
-                    })?
+                    .ok_or(ParseError::Mt940MissingCapture { field: "amount" })?
                     .as_str();
 
                 let amount = amount_str
@@ -170,8 +167,12 @@ pub fn parse_mt940_alt(input: &str) -> Result<Vec<Wallet>, super::errors::ParseE
 
                 // Note: We assume account_name_identification is non-empty; if empty, logic may break
                 let (credit_account, debit_account) = match credit_debit {
-                    BalanceAdjustType::Debit => (tr_direction.clone(), account_name_identification.clone()),
-                    BalanceAdjustType::Credit => (account_name_identification.clone(), tr_direction.clone()),
+                    BalanceAdjustType::Debit => {
+                        (tr_direction.clone(), account_name_identification.clone())
+                    }
+                    BalanceAdjustType::Credit => {
+                        (account_name_identification.clone(), tr_direction.clone())
+                    }
                     BalanceAdjustType::WithoutInfo => {
                         // This shouldn't happen due to match above
                         return Err(ParseError::Mt940InvalidCreditDebitMarker {
@@ -250,7 +251,10 @@ fn parse_60f(s: &str) -> Result<Balance, ParseError> {
     let amount_str = &s[10..];
 
     // Clean up amount (remove newlines, negative signs in wrong place, etc.)
-    let cleaned_amount = amount_str.replace("\n", "").replace("\r", "").replace('-', ""); // be cautious with '-'
+    let cleaned_amount = amount_str
+        .replace("\n", "")
+        .replace("\r", "")
+        .replace('-', ""); // be cautious with '-'
     let amount_clean = cleaned_amount.replace(',', ".");
 
     let amount = amount_clean

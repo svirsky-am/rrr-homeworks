@@ -5,24 +5,71 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+    
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build-and-test:
 
+  # Detect which paths changed
+  changes:
     runs-on: ubuntu-latest
-
+    outputs:
+      core_changed: ${{ steps.filter.outputs.core }}
+      streaming_changed: ${{ steps.filter.outputs.streaming }}
     steps:
-    - uses: actions/checkout@v4
-    - name: Build rr-parser-lib
-      run: cargo build -p rr-parser-lib --verbose
-    - name: Build rr-file-processor
-      run: cargo build -p rr-file-processor --verbose
-    - name: Run tests
-      run: cargo test -p rr-parser-lib --verbose
-    - name: Run tests
-      run: cargo test -p rr-file-processor --verbose
-    - name: integarated tests
-      run: make run-integrated-tests
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed for PRs to compare correctly
+
+      - name: Detect changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            core:
+              - 'rr-parser-lib/**'
+              - 'rr-file-processor/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+            streaming:
+              - 'streaming_quotes_project/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+  # Job 1: Build & test core crates (rr-parser-lib + rr-file-processor)
+  build-and-test-core:
+    needs: changes
+    if: ${{ needs.changes.outputs.core_changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build rr-parser-lib
+        run: cargo build -p rr-parser-lib --verbose
+
+      - name: Build rr-file-processor
+        run: cargo build -p rr-file-processor --verbose
+
+      - name: Run tests for rr-parser-lib
+        run: cargo test -p rr-parser-lib --verbose
+
+      - name: Run tests for rr-file-processor
+        run: cargo test -p rr-file-processor --verbose
+
+      - name: Run integrated tests (core)
+        run: make run-integrated-tests
+
+  # Job 2: Build & test streaming_quotes_project
+  build-and-test-streaming:
+    needs: changes
+    if: ${{ needs.changes.outputs.streaming_changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build streaming_quotes_project
+        run: cargo build -p streaming_quotes_project --verbose
+
+      - name: Run tests for streaming_quotes_project
+        run: cargo test -p streaming_quotes_project --test integration -- --nocapture
