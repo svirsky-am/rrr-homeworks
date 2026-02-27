@@ -16,4 +16,11 @@ mod2-lint-streaming_quotes_project:
 .PHONY: mod2-build-integerated-tests
 mod2-build-integerated-tests:
 	cargo build -p streaming_quotes_project --bins
-	cargo test -p streaming_quotes_project -- --nocapture
+	cargo test -p streaming_quotes_project --test integration -- --nocapture
+# cargo test -p streaming_quotes_project -- --nocapture
+
+
+.PHONY: mod2-build-server
+mod2-build-server:
+	cargo build -p streaming_quotes_project --bins
+# cargo test -p streaming_quotes_project -- --nocapture

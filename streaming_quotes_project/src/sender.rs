@@ -1,120 +1,68 @@
-// src/sender.rs
-
-use crate::{RoomMetrics, debug, info, init_logger, trace, warn};
-use bincode;
-use std::net::UdpSocket;
+use std::net::{UdpSocket, SocketAddr};
+use std::sync::Arc;
 use std::thread;
-use std::time::Duration;
+use std::sync::mpsc;
 
-pub struct MetricsSender {
-    socket: UdpSocket,
-}
+fn main() {
+    println!("[Server] Запуск quote_server...");
 
-impl MetricsSender {
-    pub fn new(bind_addr: &str) -> Result<Self, std::io::Error> {
-        let socket = UdpSocket::bind(bind_addr)?;
+    // Привязываем сервер к порту 8000
+    let socket = UdpSocket::bind("127.0.0.1:8000").expect("Не удалось привязаться к порту 8000");
+    println!("[Server] Слушаем UDP на 127.0.0.1:8000");
 
-        // Инициализируем логирование, если фича включена
-        init_logger();
+    // Оборачиваем сокет в Arc для безопасного доступа из нескольких потоков
+    let socket = Arc::new(socket);
 
-        info!("MetricsSender создан на адресе {}", bind_addr);
+    // Создаем канал для передачи адреса клиента от потока приема к потоку отправки
+    let (tx, rx) = mpsc::channel::<SocketAddr>();
 
-        Ok(Self { socket })
-    }
+    // Клонируем сокет и передатчик для первого потока (Прием)
+    let socket_recv = Arc::clone(&socket);
+    let tx_clone = tx.clone();
 
-
-    // Метод отправки сообщений в сокет
-    pub fn send_to(
-        &self,
-        metrics: &RoomMetrics,
-        target_addr: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-
-        debug!("Сериализация метрик: {:?}", metrics);
-        let encoded = bincode::serialize(metrics)?;
-        
-        debug!("Отправка {} байт на {}", encoded.len(), target_addr);
-        // self.socket.send_to(&encoded, target_addr)?;
-        let sent_bytes = self.socket.send_to(&encoded, target_addr)?;
-
-        trace!("Успешно отправлено {} байт", sent_bytes);
-        Ok(())
-    }
-
-    // Метод для запуска цикла постоянной отправки метрик
-    pub fn start_broadcasting(
-        
-        self,
-        target_addr: String,
-        interval_ms: u64,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-
-
-        // println!(
-        //     "Имитатор датчиков запущен. Отправка на {} каждые {}ms",
-        //     target_addr, interval_ms
-        // );
-
-        info!(
-            "Запуск трансляции метрик на {} каждые {} мс",
-            target_addr, interval_ms
-        );
-
-
-
-        // // Информация о включённых фичах
-        // #[cfg(feature = "random")]
-        // println!("✅ Фича 'random' активна - используется rand для генерации данных");
-       
-        // Информация о включённых фичах
-        #[cfg(feature = "random")]
-        info!("Фича 'random' активна - используется rand для генерации данных");
-
-        // #[cfg(not(feature = "random"))]
-        // println!("ℹ️  Фича 'random' отключена - используется детерминистическая генерация");
-
-        #[cfg(not(feature = "random"))]
-        warn!("Фича 'random' отключена - используется детерминистическая генерация");
-        
-        let mut counter = 0;
+    // --- ПОТОК 1: Прослушивание PING ---
+    let listener_thread = thread::spawn(move || {
+        let mut buf = [0u8; 1024];
         loop {
-            counter += 1;
-            debug!("Генерация метрик #{}", counter);
-            let metrics = RoomMetrics::random();
-            trace!("Сгенерированные метрики: {:?}", metrics);
-
-            match self.send_to(&metrics, &target_addr) {
-                Ok(()) => {
-                    info!(
-                        "[{}] Отправлено: {:.1}C, {:.1}% влажности, давление: {:.1}hPa, дверь: {}",
-                        metrics.formatted_time(),
-                        metrics.temperature,
-                        metrics.humidity,
-                        metrics.pressure,
-                        if metrics.door_open {
-                            "открыта"
-                        } else {
-                            "закрыта"
-                        },
-                    );
-
-                    // // Демонстрация фичи sqlite
-                    // #[cfg(feature = "sqlite")]
-                    // {
-                    //     println!("   💾 SQL: {}", metrics.to_sql());
-                    // }
-                    // Демонстрация фичи sqlite
-                    #[cfg(feature = "sqlite")]
-                    {
-                        debug!("SQL-запрос: {}", metrics.to_sql());
+            match socket_recv.recv_from(&mut buf) {
+                Ok((size, addr)) => {
+                    let message = String::from_utf8_lossy(&buf[..size]);
+                    if message.trim() == "PING" {
+                        println!("[Server Thread 1] Получен PING от {}", addr);
+                        // Сообщаем второму потоку, куда слать ответ
+                        if tx_clone.send(addr).is_err() {
+                            eprintln!("[Server Thread 1] Ошибка отправки адреса в канал");
+                            break;
+                        }
                     }
                 }
                 Err(e) => {
-                    eprintln!("Ошибка отправки: {}", e);
+                    eprintln!("[Server Thread 1] Ошибка приема: {}", e);
                 }
             }
-
-            thread::sleep(Duration::from_millis(interval_ms));
         }
-    }
+    });
+
+    // --- ПОТОК 2: Отправка PONG ---
+    let sender_thread = thread::spawn(move || {
+        loop {
+            match rx.recv() {
+                Ok(client_addr) => {
+                    println!("[Server Thread 2] Отправка PONG клиенту {}", client_addr);
+                    let msg = "PONG";
+                    if let Err(e) = socket.send_to(msg.as_bytes(), client_addr) {
+                        eprintln!("[Server Thread 2] Ошибка отправки PONG: {}", e);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("[Server Thread 2] Ошибка получения адреса из канала: {}", e);
+                    break;
+                }
+            }
+        }
+    });
+
+    // Ожидаем завершения потоков (в данном примере они работают бесконечно)
+    let _ = listener_thread.join();
+    let _ = sender_thread.join();
 }

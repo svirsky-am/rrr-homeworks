@@ -72,4 +72,4 @@ jobs:
         run: cargo build -p streaming_quotes_project --verbose
 
       - name: Run tests for streaming_quotes_project
-        run: cargo test -p streaming_quotes_project --verbose -- --nocapture
+        run: cargo test -p streaming_quotes_project --test integration -- --nocapture

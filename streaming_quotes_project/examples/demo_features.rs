@@ -10,16 +10,12 @@ fn main() {
     let metrics = RoomMetrics::random();
 
     println!("Сгенерированные метрики:");
-    println!("  Температура: {:.1}°C", metrics.temperature);
-    println!("  Влажность: {:.1}%", metrics.humidity);
-    println!("  Давление: {:.1}hPa", metrics.pressure);
+    // println!("  Температура: {:.1}°C", metrics.temperature);
+    // println!("  Влажность: {:.1}%", metrics.humidity);
+    // println!("  Давление: {:.1}hPa", metrics.pressure);
     println!(
         "  Дверь: {}",
-        if metrics.door_open {
-            "открыта"
-        } else {
-            "закрыта"
-        }
+            "открыта".to_owned()
     );
 
     // Показываем, какие фичи активны

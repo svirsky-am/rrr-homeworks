@@ -1,6 +1,8 @@
 [workspace]
-members = ["rr-parser-lib",
-    "rr-file-processor", "streaming_quotes_project", 
-#    "sandbox_env", 
+members = [
+    "streaming_quotes_project", 
+    "rr-parser-lib",
+    "rr-file-processor", 
+# "sandbox_env", 
 ]
 resolver = "2"

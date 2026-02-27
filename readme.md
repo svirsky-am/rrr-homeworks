@@ -1,5 +1,8 @@
 # Модуль 2
-- [Описание решения](docs/module2/quotes_satream.md)
+
+![Схема приложения](./docs/home_task_2.gif)
+
+- [Описание решения](docs/module2/quotes_stream.md)
 - [Release notes](docs/module2/release_notes.md)
 
 Используемые крейты:
