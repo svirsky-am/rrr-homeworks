@@ -1,4 +1,4 @@
-# Модуль 2
+# Модуль 2 (клиент-серверное приложения `quote_server` и `quote_client`)
 Используемые крейты:
 - streaming_quotes_project
 
@@ -20,10 +20,7 @@ RUST_LOG=info target/release/quote_client 127.0.0.1:8001
 - [Расшериенное описание решения](docs/module2/quotes_stream.md)
 - [Release notes](docs/module2/release_notes.md)
 
-Используемые крейты:
-- streaming_quotes_project
-
-# Модуль 1
+# Модуль 1 (конвертер банковских выписок)
 - [Описание решения](docs/module1/rr_converter_readme.md)
 - [Release notes](docs/module1/release_notes.md)
 
