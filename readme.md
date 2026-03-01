@@ -1,6 +1,7 @@
 # Модуль 2
 Используемые крейты:
 - streaming_quotes_project
+
 Релинзная сборка проекта:
 ```sh 
 cargo build --release -p streaming_quotes_project --bins
