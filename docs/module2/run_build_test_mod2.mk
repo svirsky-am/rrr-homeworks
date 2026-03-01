@@ -13,14 +13,27 @@ mod2-lint-streaming_quotes_project:
 	cargo fix --lib -p streaming_quotes_project
 	cargo fix --lib -p streaming_quotes_project --tests
 
-.PHONY: mod2-build-integerated-tests
-mod2-build-integerated-tests:
+
+.PHONY: cleanup-ports
+cleanup-ports:
+	@echo "Cleaning up zombie processes..."
+	-pkill -f quote_server 2>/dev/null || true
+	-pkill -f quote_client 2>/dev/null || true
+	@sleep 1
+	@echo "Done"
+
+mod2-build-integerated-tests: cleanup-ports
 	cargo build -p streaming_quotes_project --bins
-	cargo test -p streaming_quotes_project --test integration -- --nocapture
-# cargo test -p streaming_quotes_project -- --nocapture
+	RUST_LOG=info  cargo test -p streaming_quotes_project --test integration -- --nocapture
 
 
-.PHONY: mod2-build-server
-mod2-build-server:
-	cargo build -p streaming_quotes_project --bins
-# cargo test -p streaming_quotes_project -- --nocapture
+.PHONY: mod2-build-server-release
+mod2-build-server-release:
+	cargo build --release -p streaming_quotes_project --bins
+
+# Проверка кода
+# Форматирование
+mod2-build-staff:
+	cargo doc -p streaming_quotes_project --no-deps --open
+	cargo clippy -p streaming_quotes_project --bins
+	cargo fmt -p streaming_quotes_project

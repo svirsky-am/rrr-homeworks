@@ -1,45 +1,31 @@
-#[cfg(feature = "logging")]
+//! Logging utilities for the streaming quotes project.
+//!
+//! Provides centralized logging initialization with configurable log levels
+//! via the `RUST_LOG` environment variable.
+
 pub use log::{debug, error, info, trace, warn};
 
-// Макросы-заглушки, когда фича logging отключена
-#[cfg(not(feature = "logging"))]
-#[macro_export]
-macro_rules! debug {
-    ($($arg:tt)*) => {};
-}
-
-#[cfg(not(feature = "logging"))]
-#[macro_export]
-macro_rules! info {
-    ($($arg:tt)*) => {};
-}
-
-#[cfg(not(feature = "logging"))]
-#[macro_export]
-macro_rules! warn {
-    ($($arg:tt)*) => {};
-}
-
-#[cfg(not(feature = "logging"))]
-#[macro_export]
-macro_rules! error {
-    ($($arg:tt)*) => {};
-}
-
-#[cfg(not(feature = "logging"))]
-#[macro_export]
-macro_rules! trace {
-    ($($arg:tt)*) => {};
-}
-
-// Функция инициализации логирования
-#[cfg(feature = "logging")]
+/// Initializes the logging system.
+///
+/// This function should be called once at the start of the application.
+/// Log level is controlled by the `RUST_LOG` environment variable.
+///
+/// # Examples
+///
+/// ```no_run
+/// streaming_quotes_project::logging::init_logger();
+/// ```
+///
+/// # Environment Variables
+///
+/// - `RUST_LOG=info` - Show info and above
+/// - `RUST_LOG=debug` - Show debug and above
+/// - `RUST_LOG=streaming_quotes_project=debug` - Debug for this crate only
 pub fn init_logger() {
-    env_logger::init();
-    info!("Логирование инициализировано");
-}
-
-#[cfg(not(feature = "logging"))]
-pub fn init_logger() {
-    // Ничего не делаем, когда логирование отключено
+    let _ = env_logger::builder()
+        .format_timestamp_millis()
+        .target(env_logger::Target::Stdout)
+        .parse_default_env()
+        .try_init();
+    info!("Logging initialized");
 }

@@ -1,138 +1,211 @@
+//! Integration tests for the streaming quotes project.
+
+use std::env;
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
-use std::path::PathBuf;
-use std::env;
+
+/// Cleans up any zombie processes on the specified ports.
+fn cleanup_ports(ports: &[u16]) {
+    for port in ports {
+        let output = Command::new("lsof")
+            .args(["-ti", &format!(":{}", port)])
+            .output();
+        if let Ok(out) = output {
+            if !out.stdout.is_empty() {
+                let pids = String::from_utf8_lossy(&out.stdout);
+                for pid in pids.trim().split('\n') {
+                    if !pid.is_empty() {
+                        let _ = Command::new("kill").args(["-9", pid]).output();
+                        eprintln!("[TEST] Killed zombie process on port {}: {}", port, pid);
+                    }
+                }
+            }
+        }
+    }
+    thread::sleep(Duration::from_millis(200));
+}
 
 #[test]
-fn test_udp_quote_client_server_with_multiple_clients() {
-    // 1. Собираем бинарники
+fn test_quote_streaming_with_multiple_clients() {
+    // Очистка портов перед тестом
+    cleanup_ports(&[12355, 12356]);
+
     let build_status = Command::new("cargo")
         .args(["build", "-p", "streaming_quotes_project", "--bins"])
         .status()
         .expect("Failed to execute cargo build");
     assert!(build_status.success(), "Build failed");
 
-    let udp_port = 12352;
+    let udp_port = 12355;
     let tcp_port = udp_port + 1;
     let server_tcp_addr = format!("127.0.0.1:{}", tcp_port);
-    
-    let manifest_dir = env::var("CARGO_MANIFEST_DIR")
-        .expect("CARGO_MANIFEST_DIR not set");
-    
+
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
+
     let workspace_root = PathBuf::from(&manifest_dir)
         .parent()
         .expect("Could not find workspace root")
         .to_path_buf();
-    
+
     let target_dir = workspace_root.join("target/debug");
     let server_bin = target_dir.join("quote_server");
     let client_bin = target_dir.join("quote_client");
 
     eprintln!("[TEST] Target dir: {}", target_dir.display());
-    assert!(server_bin.exists(), "Server binary not found: {}", server_bin.display());
-    assert!(client_bin.exists(), "Client binary not found: {}", client_bin.display());
+    assert!(
+        server_bin.exists(),
+        "Server binary not found: {}",
+        server_bin.display()
+    );
+    assert!(
+        client_bin.exists(),
+        "Client binary not found: {}",
+        client_bin.display()
+    );
 
-    eprintln!("[TEST] Starting server on UDP:{} TCP:{}", udp_port, tcp_port);
+    eprintln!(
+        "[TEST] Starting server on UDP:{} TCP:{}",
+        udp_port, tcp_port
+    );
 
-    // 2. Запускаем сервер
     let mut run_server = Command::new(&server_bin)
         .args([&udp_port.to_string(), &tcp_port.to_string()])
+        .env("RUST_LOG", "info")
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
         .expect("Failed to start server");
 
-    thread::sleep(Duration::from_millis(500));
+    eprintln!("[TEST] Server PID: {}", run_server.id());
+    thread::sleep(Duration::from_millis(1000));
 
-    // 3. Читаем stderr сервера
+    // Проверка, что сервер жив
+    match run_server.try_wait() {
+        Ok(Some(status)) => panic!("Server exited early: {:?}", status),
+        Ok(None) => eprintln!("[TEST] Server is running"),
+        Err(e) => eprintln!("[TEST] Error checking server: {}", e),
+    }
+
+    let server_stdout = run_server.stdout.take().unwrap();
     let server_stderr = run_server.stderr.take().unwrap();
-    
-    let (tx_register, rx_register) = mpsc::channel::<String>();
+
+    let (tx_subscribe, rx_subscribe) = mpsc::channel::<String>();
+    let (tx_quote, rx_quote) = mpsc::channel::<String>();
     let (tx_timeout, rx_timeout) = mpsc::channel::<String>();
 
-    let server_stderr_thread = std::thread::spawn(move || {
-        let reader = std::io::BufReader::new(server_stderr);
-        for line in std::io::BufRead::lines(reader) {
+    let server_stdout_thread = thread::spawn(move || {
+        use std::io::{BufRead, BufReader};
+        let reader = BufReader::new(server_stdout);
+        for line in reader.lines() {
             if let Ok(text) = line {
-                eprintln!("[SERVER LOG] {}", text);
-                
-                if text.contains("Client registered UDP address") {
-                    let _ = tx_register.send(text.clone());
+                eprintln!("[SERVER STDOUT] {}", text);
+
+                // Ищем подписку
+                if text.contains("CLIENT_SUBSCRIBED") {
+                    let _ = tx_subscribe.send(text.clone());
                 }
-                
-                if text.contains("Timeout: No PING") || text.contains("closing handler") {
+                // Ищем котировки (исправленный паттерн)
+                if text.contains("CLIENT_QUOTE_SENT") {
+                    let _ = tx_quote.send(text.clone());
+                }
+                // Ищем таймауты
+                if text.contains("CLIENT_TIMEOUT") || text.contains("CLIENT_REMOVED") {
                     let _ = tx_timeout.send(text.clone());
+                }
+                // Для отладки: ищем генерацию батчей
+                if text.contains("QUOTE_BATCH_GENERATED") {
+                    eprintln!("[TEST DEBUG] Generator is working: {}", text);
                 }
             }
         }
     });
 
-    if let Some(stdout) = run_server.stdout.take() {
-        std::thread::spawn(move || {
-            let _ = std::io::copy(&mut std::io::BufReader::new(stdout), &mut std::io::sink());
-        });
-    }
+    let _stderr_thread = thread::spawn(move || {
+        use std::io::{BufRead, BufReader};
+        let reader = BufReader::new(server_stderr);
+        for line in reader.lines() {
+            if let Ok(text) = line {
+                eprintln!("[SERVER STDERR] {}", text);
+            }
+        }
+    });
 
-    thread::sleep(Duration::from_millis(300));
-
-    // 4. Запускаем 4 клиента
     let mut clients = Vec::new();
     let client_configs = [
-        ("Client-1", 500),
-        ("Client-2", 1000),
-        ("Client-3", 800),
-        ("Client-4", 600),
+        ("Client-1", "AAPL,TSLA"),
+        ("Client-2", "MSFT,NVDA,META"),
+        ("Client-3", "GOOGL,AMZN"),
+        ("Client-4", "AAPL,MSFT,GOOGL"),
     ];
 
-    for (name, interval) in client_configs.iter() {
-        eprintln!("[TEST] Starting {} with interval {}ms", name, interval);
+    for (name, tickers) in client_configs.iter() {
+        eprintln!("[TEST] Starting {} subscribing to {}", name, tickers);
+        let tickers_string = tickers.to_string();
         let mut run_client = Command::new(&client_bin)
-            .args([&server_tcp_addr, &interval.to_string()])
+            .args([&server_tcp_addr, &tickers_string])
+            .env("RUST_LOG", "info")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
             .expect(&format!("Failed to start {}", name));
 
         if let Some(out) = run_client.stdout.take() {
-            std::thread::spawn(move || {
+            thread::spawn(move || {
                 let _ = std::io::copy(&mut std::io::BufReader::new(out), &mut std::io::sink());
             });
         }
         if let Some(err) = run_client.stderr.take() {
-            std::thread::spawn(move || {
+            thread::spawn(move || {
                 let _ = std::io::copy(&mut std::io::BufReader::new(err), &mut std::io::sink());
             });
         }
 
         clients.push((name.to_string(), run_client));
-        thread::sleep(Duration::from_millis(200));
+        thread::sleep(Duration::from_millis(500));
     }
 
-    // 5. Проверяем регистрацию всех 4 клиентов
-    eprintln!("[TEST] Waiting for all 4 clients to register...");
-    let mut registered_count = 0;
-    for _ in 0..4 {
-        match rx_register.recv_timeout(Duration::from_secs(5)) {
-            Ok(msg) => {
-                eprintln!("[TEST] ✓ Registered: {}", msg);
-                registered_count += 1;
+    eprintln!("[TEST] Waiting for all 4 clients to subscribe...");
+    for i in 0..4 {
+        match rx_subscribe.recv_timeout(Duration::from_secs(10)) {
+            Ok(msg) => eprintln!("[TEST] OK: Subscribed ({}): {}", i + 1, msg),
+            Err(e) => {
+                eprintln!(
+                    "[TEST] X:FAIL Timeout waiting for subscription #{}: {:?}",
+                    i + 1,
+                    e
+                );
+                panic!("Client subscription timeout");
             }
-            Err(_) => panic!("[TEST] ✗ Client registration timeout"),
         }
     }
-    assert_eq!(registered_count, 4, "Not all clients registered");
-    eprintln!("[TEST] ✓ All 4 clients registered successfully");
+    eprintln!("[TEST] Ok: All 4 clients subscribed successfully");
 
-    // 6. Проверяем, что сервер видит 4 активных клиента
-    thread::sleep(Duration::from_millis(500));
+    eprintln!("[TEST] Waiting for quote streams...");
+    let mut quote_count = 0;
+    for i in 0..40 {
+        match rx_quote.recv_timeout(Duration::from_secs(2)) {
+            Ok(msg) => {
+                eprintln!("[TEST] ✓ Quote ({}): {}", i + 1, msg);
+                quote_count += 1;
+                if quote_count >= 4 {
+                    break;
+                }
+            }
+            Err(_) => eprintln!("[TEST] Warning: No quote in 2-second window #{}", i + 1),
+        }
+    }
+    assert!(
+        quote_count >= 4,
+        "Expected at least 4 quotes, got {}",
+        quote_count
+    );
+    eprintln!("[TEST] OK: Received {} quotes", quote_count);
 
-    // 7. ИСПРАВЛЕНО: Убиваем 2 клиента без конфликта заиммования
-    eprintln!("[TEST] Killing Client-2 and Client-4, waiting for server timeout...");
-    
+    eprintln!("[TEST] Killing Client-2 and Client-4...");
     let mut remaining_clients = Vec::new();
-
     for (name, mut client) in clients {
         if name == "Client-2" || name == "Client-4" {
             let _ = client.kill();
@@ -142,36 +215,31 @@ fn test_udp_quote_client_server_with_multiple_clients() {
             remaining_clients.push((name, client));
         }
     }
-
     clients = remaining_clients;
 
-    // 8. Ждем таймауты от сервера
-    eprintln!("[TEST] Waiting for 2 client timeouts...");
+    eprintln!("[TEST] Waiting for client timeouts...");
     let mut timeout_count = 0;
     for _ in 0..2 {
-        match rx_timeout.recv_timeout(Duration::from_secs(7)) {
+        match rx_timeout.recv_timeout(Duration::from_secs(8)) {
             Ok(msg) => {
-                eprintln!("[TEST] Timeout detected: {}", msg);
+                eprintln!("[TEST] Ok: Timeout: {}", msg);
                 timeout_count += 1;
             }
-            Err(_) => panic!("[TEST] Client timeout not detected within 7 seconds"),
+            Err(_) => panic!("Client timeout not detected"),
         }
     }
-    assert_eq!(timeout_count, 2, "Not all killed clients triggered timeout");
+    assert_eq!(timeout_count, 2, "Expected 2 timeouts");
 
-    // 9. Убиваем оставшихся клиентов
-    eprintln!("[TEST] Killing remaining clients...");
+    thread::sleep(Duration::from_secs(2));
+
+    eprintln!("[TEST] Cleaning up...");
     for (_, mut client) in clients {
         let _ = client.kill();
         let _ = client.wait();
     }
-
-    // 10. Завершаем сервер
     let _ = run_server.kill();
     let _ = run_server.wait();
-    let _ = server_stderr_thread.join();
-    
-    eprintln!("[TEST] ✓ SUCCESS: Server handled 4 clients correctly");
-    eprintln!("[TEST] ✓ {} clients registered", registered_count);
-    eprintln!("[TEST] ✓ {} clients timed out correctly", timeout_count);
+    let _ = server_stdout_thread.join();
+
+    eprintln!("[TEST] OK: SUCCESS: Multi-client streaming test passed");
 }
