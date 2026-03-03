@@ -145,7 +145,12 @@ fn test_quote_streaming_with_multiple_clients() {
         eprintln!("[TEST] Starting {} subscribing to {}", name, tickers);
         let tickers_string = tickers.to_string();
         let mut run_client = Command::new(&client_bin)
-            .args(["--target-quote-server", &server_tcp_addr, "--filer-list", &tickers_string])
+            .args([
+                "--target-quote-server",
+                &server_tcp_addr,
+                "--filer-list",
+                &tickers_string,
+            ])
             .env("RUST_LOG", "info")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())

@@ -12,28 +12,36 @@
 //! ./quote_client 127.0.0.1:8001 AAPL,MSFT,NVDA
 //! ```
 
+use clap::{Arg, ArgGroup, Command};
+use core::clone::Clone;
+use core::option::Option::{None, Some};
 use std::env;
 use std::io::{BufRead, Write};
 use std::net::{SocketAddr, TcpStream, UdpSocket};
+use std::path::Path;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use clap::{Arg, Command};
 
 use streaming_quotes_project::{QuoteError, QuoteResult, StockQuote, debug, error, info};
 
-
 pub struct Cli {
     pub target_quote_server: String,
-    pub filer_list: String,
+    pub tickers_list: Vec<String>,
 }
 
 fn parse_cli() -> Result<Cli, Box<dyn std::error::Error>> {
     let matches = Command::new("quote_client")
         .version("0.1.0")
-        .about("Convert between CSV and XML")
+        .about("Client of quote streamer")
+        .group(
+            ArgGroup::new("filter")
+                .args(["filer-list", "filer-file"])
+                .required(true)
+                .multiple(false),
+        )
         .arg(
-            Arg::new("target_quote_server")
+            Arg::new("target-quote-server")
                 .short('i')
                 .long("target-quote-server")
                 .help("Target quote server with port like: 192.168.8.8:8800")
@@ -41,29 +49,55 @@ fn parse_cli() -> Result<Cli, Box<dyn std::error::Error>> {
                 .value_parser(clap::value_parser!(String)),
         )
         .arg(
-            Arg::new("filer_list")
+            Arg::new("filer-list")
                 .short('l')
                 .long("filer-list")
                 .help("Filter for published quotes as string list. Looks like: \"MSFT,NVDA,META\"")
-                .default_value("-")
+                // .default_value("-")
                 .value_parser(clap::value_parser!(String)),
-        
+        )
+        .arg(
+            Arg::new("filer-file")
+                .short('f')
+                .long("filer-file")
+                .help("Filter from file, one ticker per line")
+                .value_parser(clap::value_parser!(String)),
         )
         .get_matches();
 
-    // match (args.mode, args.file) {
-    //     (Some(mode), None) => println!("Режим: {:?}", mode),
-    //     (None, Some(file)) => println!("Файл: {}", file),
-    //     _ => println!("Укажите либо режим, либо файл"),
-    // }
+    let tickers_filter_list = matches.get_one::<String>("filer-list");
+    let tickers_filter_file = matches.get_one::<String>("filer-file");
+
+    let tickers_list: Result<Vec<String>, QuoteError> =
+        match (tickers_filter_list, tickers_filter_file) {
+            (filer_list, None) => {
+                let arg_str = filer_list.unwrap().clone();
+                Ok(arg_str
+                    .split(',')
+                    .map(|t| t.trim().to_uppercase())
+                    .collect())
+            }
+            (None, filer_file) => {
+                let arg_str = filer_file.unwrap().clone();
+                let content = std::fs::read_to_string(Path::new(&arg_str))?;
+                Ok(content
+                    .lines()
+                    .map(|t| t.trim().to_uppercase())
+                    .filter(|t| !t.is_empty())
+                    .collect::<Vec<_>>())
+            }
+            (_filer_list, _filer_file) => Err(QuoteError::BothFiltersProvided), // просто для полноты
+            _ => Err(QuoteError::MissingFilterArgument),
+        };
 
     Ok(Cli {
-        target_quote_server: matches.get_one::<String>("target_quote_server").unwrap().clone(),
-        filer_list: matches.get_one::<String>("filer_list").unwrap().clone(),
+        target_quote_server: matches
+            .get_one::<String>("target-quote-server")
+            .unwrap()
+            .clone(),
+        tickers_list: tickers_list?,
     })
 }
-
-
 
 /// Client entry point.
 ///
@@ -77,33 +111,34 @@ fn parse_cli() -> Result<Cli, Box<dyn std::error::Error>> {
 /// `Ok(())` on success, or an error that will be printed to stderr
 /// by the Rust runtime with a non-zero exit code.
 fn main() -> QuoteResult<()> {
-
     let cli = parse_cli().unwrap();
     // let process_input_type = cli.target_quote_server;
     // let process_output_type = cli.filer_list;
 
-
-
     streaming_quotes_project::logging::init_logger();
+
+    // let mut tickers: Vec<String> = Vec::new();
+
+    let tickers = cli.tickers_list;
 
     // let args: Vec<String> = env::args().collect();
 
     // Аргумент 1: адрес сервера (обязательно)
-    let server_tcp_addr: SocketAddr = cli.target_quote_server.parse::<SocketAddr>()
+    let server_tcp_addr: SocketAddr = cli
+        .target_quote_server
+        .parse::<SocketAddr>()
         .map_err(|e| QuoteError::InvalidAddress(e))?;
-        // .get(1)
-        // .map(|s| s.parse::<SocketAddr>())
-        // .transpose()
-        // .map_err(|e| QuoteError::InvalidAddress(e))?
-        // .ok_or_else(|| QuoteError::MissingArgument("server_tcp_addr".to_string()))?;
-
+    // .get(1)
+    // .map(|s| s.parse::<SocketAddr>())
+    // .transpose()
+    // .map_err(|e| QuoteError::InvalidAddress(e))?
+    // .ok_or_else(|| QuoteError::MissingArgument("server_tcp_addr".to_string()))?;
 
     // Аргумент 2: тикеры (опционально)
     // let tickers: Vec<String> = args
     //     .get(2)
     //     .map(|s| s.split(',').map(|t| t.trim().to_uppercase()).collect())
     //     .unwrap_or_else(|| vec!["AAPL".to_string(), "TSLA".to_string()]);
-    let tickers: Vec<String> = cli.filer_list.split(',').map(|t| t.trim().to_uppercase()).collect();
 
     let client_udp_bind: SocketAddr = "127.0.0.1:0"
         .parse::<SocketAddr>()

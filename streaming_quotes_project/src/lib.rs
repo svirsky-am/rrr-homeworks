@@ -12,15 +12,26 @@
 //!
 //! AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, JPM, JNJ, V, PG, UNH, HD, DIS, PYPL, NFLX, ADBE, CRM
 //!
-//! ## Example
-//!
-//! ```no_run
-//! // Start server
-//! // ./quote_server 8000 8001
-//!
-//! // Start client
-//! // ./quote_client 127.0.0.1:8001 127.0.0.1:0 AAPL,TSLA
+//! ## Examples
+//! ### help
+//! ```sh
+//! ./quote_client --help
+//! ./quote_server --help
 //! ```
+//! ### Start server
+//! ```sh
+//! ./quote_server 8000 8001
+//! ``` 
+//! ### Start client
+//! With qoutes filter as string list: 
+//! ```sh
+//!  ./quote_client --target-quote-server 127.0.0.1:8001 --filer-lint AAPL,TSLA
+//! ```
+//! Import qoutes filter from file:
+//! ```sh
+//! RUST_LOG=info ./target/debug/quote_client --target-quote-server 127.0.0.1:8001 --filer-file streaming_quotes_project/tests/test_quotes.lst
+//! ```
+//!
 
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]

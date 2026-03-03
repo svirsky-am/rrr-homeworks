@@ -22,9 +22,14 @@ cleanup-ports:
 	@sleep 1
 	@echo "Done"
 
-mod2-build-integerated-tests: cleanup-ports
+.PHONY: mod2-build-debug
+mod2-build-debug: cleanup-ports
+	cargo build -p streaming_quotes_project --bins
+	
+mod2-build-integerated-tests: mod2-build-debug
 	cargo build -p streaming_quotes_project --bins
 	RUST_LOG=info  cargo test -p streaming_quotes_project --test integration -- --nocapture
+
 
 
 .PHONY: mod2-build-server-release
