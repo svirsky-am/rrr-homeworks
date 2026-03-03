@@ -57,7 +57,7 @@ RUST_LOG=info target/debug/quote_client 127.0.0.1:8001
 Запуск с конкретными тикерами
 ```sh
 RUST_LOG=info ./target/debug/quote_client --target-quote-server 127.0.0.1:8001 --filer-list AAPL,MSFT,NVDA
-RUST_LOG=info ./target/debug/quote_client --target-quote-server 127.0.0.1:8001 --filer-file streaming_quotes_project/tests/test_quotes.lst
+RUST_LOG=info ./target/debug/quote_client --target-quote-server 127.0.0.1:8001 --tickers-file streaming_quotes_project/tests/test_quotes.lst
 ```
 
 Run quote_client:
