@@ -18,38 +18,92 @@ use std::net::{SocketAddr, TcpStream, UdpSocket};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
+use clap::{Arg, Command};
 
 use streaming_quotes_project::{QuoteError, QuoteResult, StockQuote, debug, error, info};
+
+
+pub struct Cli {
+    pub target_quote_server: String,
+    pub filer_list: String,
+}
+
+fn parse_cli() -> Result<Cli, Box<dyn std::error::Error>> {
+    let matches = Command::new("quote_client")
+        .version("0.1.0")
+        .about("Convert between CSV and XML")
+        .arg(
+            Arg::new("target_quote_server")
+                .short('i')
+                .long("target-quote-server")
+                .help("Target quote server with port like: 192.168.8.8:8800")
+                .required(true)
+                .value_parser(clap::value_parser!(String)),
+        )
+        .arg(
+            Arg::new("filer_list")
+                .short('l')
+                .long("filer-list")
+                .help("Filter for published quotes as string list. Looks like: \"MSFT,NVDA,META\"")
+                .default_value("-")
+                .value_parser(clap::value_parser!(String)),
+        
+        )
+        .get_matches();
+
+    // match (args.mode, args.file) {
+    //     (Some(mode), None) => println!("Режим: {:?}", mode),
+    //     (None, Some(file)) => println!("Файл: {}", file),
+    //     _ => println!("Укажите либо режим, либо файл"),
+    // }
+
+    Ok(Cli {
+        target_quote_server: matches.get_one::<String>("target_quote_server").unwrap().clone(),
+        filer_list: matches.get_one::<String>("filer_list").unwrap().clone(),
+    })
+}
+
+
 
 /// Client entry point.
 ///
 /// # Arguments
 ///
-/// * `args[1]` - Server TCP address (e.g., "127.0.0.1:8001")
-/// * `args[2]` - Comma-separated tickers (optional, default: "AAPL,TSLA")
+/// * `--target-quote-server` - Server TCP address (e.g., "127.0.0.1:8001")
+/// * --filer_list - Comma-separated tickers (optional, default: "AAPL,TSLA")
 ///
 /// # Returns
 ///
 /// `Ok(())` on success, or an error that will be printed to stderr
 /// by the Rust runtime with a non-zero exit code.
 fn main() -> QuoteResult<()> {
+
+    let cli = parse_cli().unwrap();
+    // let process_input_type = cli.target_quote_server;
+    // let process_output_type = cli.filer_list;
+
+
+
     streaming_quotes_project::logging::init_logger();
 
-    let args: Vec<String> = env::args().collect();
+    // let args: Vec<String> = env::args().collect();
 
     // Аргумент 1: адрес сервера (обязательно)
-    let server_tcp_addr: SocketAddr = args
-        .get(1)
-        .map(|s| s.parse::<SocketAddr>())
-        .transpose()
-        .map_err(|e| QuoteError::InvalidAddress(e))?
-        .ok_or_else(|| QuoteError::MissingArgument("server_tcp_addr".to_string()))?;
+    let server_tcp_addr: SocketAddr = cli.target_quote_server.parse::<SocketAddr>()
+        .map_err(|e| QuoteError::InvalidAddress(e))?;
+        // .get(1)
+        // .map(|s| s.parse::<SocketAddr>())
+        // .transpose()
+        // .map_err(|e| QuoteError::InvalidAddress(e))?
+        // .ok_or_else(|| QuoteError::MissingArgument("server_tcp_addr".to_string()))?;
+
 
     // Аргумент 2: тикеры (опционально)
-    let tickers: Vec<String> = args
-        .get(2)
-        .map(|s| s.split(',').map(|t| t.trim().to_uppercase()).collect())
-        .unwrap_or_else(|| vec!["AAPL".to_string(), "TSLA".to_string()]);
+    // let tickers: Vec<String> = args
+    //     .get(2)
+    //     .map(|s| s.split(',').map(|t| t.trim().to_uppercase()).collect())
+    //     .unwrap_or_else(|| vec!["AAPL".to_string(), "TSLA".to_string()]);
+    let tickers: Vec<String> = cli.filer_list.split(',').map(|t| t.trim().to_uppercase()).collect();
 
     let client_udp_bind: SocketAddr = "127.0.0.1:0"
         .parse::<SocketAddr>()
