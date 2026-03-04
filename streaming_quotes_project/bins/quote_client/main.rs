@@ -12,44 +12,116 @@
 //! ./quote_client 127.0.0.1:8001 AAPL,MSFT,NVDA
 //! ```
 
+use clap::{Arg, ArgGroup, Command};
+use core::clone::Clone;
+use core::option::Option::{None, Some};
 use std::env;
 use std::io::{BufRead, Write};
 use std::net::{SocketAddr, TcpStream, UdpSocket};
+use std::path::Path;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
 use streaming_quotes_project::{QuoteError, QuoteResult, StockQuote, debug, error, info};
 
+pub struct Cli {
+    pub target_quote_server: SocketAddr,
+    pub tickers_list: Vec<String>,
+}
+
+fn parse_cli() -> Result<Cli, Box<dyn std::error::Error>> {
+    let matches = Command::new("quote_client")
+        .version("0.1.0")
+        .about("Client of quote streamer")
+        .group(
+            ArgGroup::new("filter")
+                .args(["filer-list", "tickers-file"])
+                .required(true)
+                .multiple(false),
+        )
+        .arg(
+            Arg::new("target-quote-server")
+                .short('i')
+                .long("target-quote-server")
+                .help("Target quote server with port like: 192.168.8.8:8800")
+                .required(true)
+                .value_parser(clap::value_parser!(String)),
+        )
+        .arg(
+            Arg::new("filer-list")
+                .short('l')
+                .long("filer-list")
+                .help("Filter for published quotes as string list. Looks like: \"MSFT,NVDA,META\"")
+                // .default_value("-")
+                .value_parser(clap::value_parser!(String)),
+        )
+        .arg(
+            Arg::new("tickers-file")
+                .short('f')
+                .long("tickers-file")
+                .help("Filter from file, one ticker per line")
+                .value_parser(clap::value_parser!(String)),
+        )
+        .get_matches();
+
+    let tickers_filter_list = matches.get_one::<String>("filer-list");
+    let tickers_filter_file = matches.get_one::<String>("tickers-file");
+
+    let tickers_list: Result<Vec<String>, QuoteError> =
+        match (tickers_filter_list, tickers_filter_file) {
+            (filer_list, None) => {
+                let arg_str = filer_list.ok_or_else(|| QuoteError::MissingArgument("filer-list".to_string()))?;
+                Ok(arg_str
+                    .split(',')
+                    .map(|t| t.trim().to_uppercase())
+                    .collect())
+            }
+            (None, filer_file) => {
+                let arg_str = filer_file.ok_or_else(|| QuoteError::MissingArgument("tickers-file".to_string()))?;
+                let content = std::fs::read_to_string(Path::new(&arg_str))?;
+                Ok(content
+                    .lines()
+                    .map(|t| t.trim().to_uppercase())
+                    .filter(|t| !t.is_empty())
+                    .collect::<Vec<_>>())
+            }
+            (_filer_list, _filer_file) => Err(QuoteError::BothFiltersProvided), // просто для полноты
+            _ => Err(QuoteError::MissingFilterArgument),
+        };
+
+    let server_str = matches
+        .get_one::<String>("target-quote-server")
+        .ok_or_else(|| QuoteError::MissingArgument("target-quote-server".to_string()))?;
+
+    let target_quote_server: SocketAddr = server_str.clone()
+        .parse()
+        .map_err(|e| QuoteError::InvalidAddress(e))?;
+    
+    Ok(Cli {
+        target_quote_server,
+        tickers_list: tickers_list?,
+    })
+}
+
 /// Client entry point.
 ///
 /// # Arguments
 ///
-/// * `args[1]` - Server TCP address (e.g., "127.0.0.1:8001")
-/// * `args[2]` - Comma-separated tickers (optional, default: "AAPL,TSLA")
+/// * `--target-quote-server` - Server TCP address (e.g., "127.0.0.1:8001")
+/// * --filer-list - Comma-separated tickers
+/// * --tickers-file - File with tickers.
 ///
 /// # Returns
 ///
 /// `Ok(())` on success, or an error that will be printed to stderr
 /// by the Rust runtime with a non-zero exit code.
 fn main() -> QuoteResult<()> {
+    let cli = parse_cli().unwrap();
+
     streaming_quotes_project::logging::init_logger();
 
-    let args: Vec<String> = env::args().collect();
-
-    // Аргумент 1: адрес сервера (обязательно)
-    let server_tcp_addr: SocketAddr = args
-        .get(1)
-        .map(|s| s.parse::<SocketAddr>())
-        .transpose()
-        .map_err(|e| QuoteError::InvalidAddress(e))?
-        .ok_or_else(|| QuoteError::MissingArgument("server_tcp_addr".to_string()))?;
-
-    // Аргумент 2: тикеры (опционально)
-    let tickers: Vec<String> = args
-        .get(2)
-        .map(|s| s.split(',').map(|t| t.trim().to_uppercase()).collect())
-        .unwrap_or_else(|| vec!["AAPL".to_string(), "TSLA".to_string()]);
+    let tickers = cli.tickers_list;
 
     let client_udp_bind: SocketAddr = "127.0.0.1:0"
         .parse::<SocketAddr>()
@@ -69,11 +141,11 @@ fn main() -> QuoteResult<()> {
         "CLIENT_STARTED udp={} tickers={:?}",
         client_udp_addr, tickers
     );
-    info!("CLIENT_CONNECTING tcp={}", server_tcp_addr);
+    info!("CLIENT_CONNECTING tcp={}", cli.target_quote_server);
 
     let mut tcp_stream =
-        TcpStream::connect(server_tcp_addr).map_err(|e| QuoteError::ConnectError {
-            addr: server_tcp_addr.to_string(),
+        TcpStream::connect(cli.target_quote_server).map_err(|e| QuoteError::ConnectError {
+            addr: cli.target_quote_server.to_string(),
             source: e,
         })?;
 
@@ -84,7 +156,9 @@ fn main() -> QuoteResult<()> {
     tcp_stream.write_all(stream_cmd.as_bytes())?;
     tcp_stream.flush()?;
 
-    let mut reader = std::io::BufReader::new(tcp_stream.try_clone().unwrap());
+    let tcp_stream_clone = tcp_stream.try_clone()
+        .map_err(|e| QuoteError::SendError(e))?;
+    let mut reader = std::io::BufReader::new(tcp_stream_clone);
     let mut response = String::new();
     reader.read_line(&mut response)?;
     info!("CLIENT_SERVER_RESPONSE: {}", response.trim());
@@ -102,7 +176,7 @@ fn main() -> QuoteResult<()> {
     // Поток 2: PING keep-alive
     let ping_thread = thread::spawn({
         let socket = Arc::clone(&udp_socket);
-        let server_udp_addr: SocketAddr = format!("127.0.0.1:{}", server_tcp_addr.port() - 1)
+        let server_udp_addr: SocketAddr = format!("127.0.0.1:{}", cli.target_quote_server.port() - 1)
             .parse()
             .unwrap_or_else(|_| "127.0.0.1:8000".parse().unwrap());
         move || {

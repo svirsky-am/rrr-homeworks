@@ -62,6 +62,14 @@ pub enum QuoteError {
     /// Error when required argument is missing.
     #[error("Missing required argument: {0}")]
     MissingArgument(String),
+
+    /// Error argument --filer-list or --tickers-file is missing.
+    #[error("Missing required argument --filer-list or --tickers-file")]
+    MissingFilterArgument,
+
+    /// Error argument --filer-list or --tickers-file is missing.
+    #[error("Just only one required argument --filer-list or --tickers-file")]
+    BothFiltersProvided,
 }
 
 /// Result type alias for quote operations.

@@ -45,6 +45,21 @@ RUST_LOG=info ./target/release/quote_client 127.0.0.1:8001 AAPL,MSFT,NVDA
 
 
 ## debug
+
+Запуск сервера:
+```sh
+RUST_LOG=info target/debug/quote_server
+```
+Запуск с тикерами по умолчанию (AAPL,TSLA)
+```sh
+RUST_LOG=info target/debug/quote_client 127.0.0.1:8001
+```
+Запуск с конкретными тикерами
+```sh
+RUST_LOG=info ./target/debug/quote_client --target-quote-server 127.0.0.1:8001 --filer-list AAPL,MSFT,NVDA
+RUST_LOG=info ./target/debug/quote_client --target-quote-server 127.0.0.1:8001 --tickers-file streaming_quotes_project/tests/test_quotes.lst
+```
+
 Run quote_client:
 ```sh 
 	cargo run -p streaming_quotes_project --bin quote_client --features 'sqlite random logging'

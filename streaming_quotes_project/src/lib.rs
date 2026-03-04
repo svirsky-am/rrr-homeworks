@@ -12,15 +12,26 @@
 //!
 //! AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, JPM, JNJ, V, PG, UNH, HD, DIS, PYPL, NFLX, ADBE, CRM
 //!
-//! ## Example
-//!
-//! ```no_run
-//! // Start server
-//! // ./quote_server 8000 8001
-//!
-//! // Start client
-//! // ./quote_client 127.0.0.1:8001 127.0.0.1:0 AAPL,TSLA
+//! ## Examples
+//! ### help
+//! ```sh
+//! ./quote_client --help
+//! ./quote_server --help
 //! ```
+//! ### Start server
+//! ```sh
+//! ./quote_server 8000 8001
+//! ``` 
+//! ### Start client
+//! With qoutes filter as string list: 
+//! ```sh
+//!  ./quote_client --target-quote-server 127.0.0.1:8001 --filer-lint AAPL,TSLA
+//! ```
+//! Import qoutes filter from file:
+//! ```sh
+//! RUST_LOG=info ./target/debug/quote_client --target-quote-server 127.0.0.1:8001 --tickers-file streaming_quotes_project/tests/test_quotes.lst
+//! ```
+//!
 
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
@@ -85,6 +96,14 @@ pub fn is_supported_ticker(ticker: &str) -> bool {
     SUPPORTED_TICKERS.contains(&ticker)
 }
 
+
+fn get_cur_timestamp () -> u64 {
+    SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0)
+}
+
 /// Batch of quotes generated at the same time for all tickers.
 #[derive(Debug, Clone)]
 pub struct QuoteBatch {
@@ -97,10 +116,7 @@ pub struct QuoteBatch {
 impl QuoteBatch {
     /// Creates a new batch from individual quotes.
     pub fn new(quotes: Vec<StockQuote>) -> Self {
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0);
+        let timestamp = get_cur_timestamp();
 
         QuoteBatch { quotes, timestamp }
     }
@@ -212,10 +228,7 @@ impl QuoteGenerator {
         let volume_category = VolumeCategory::for_ticker(ticker);
         let volume = volume_category.generate_volume();
 
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as u64;
+        let timestamp = get_cur_timestamp();
 
         Some(StockQuote {
             ticker: ticker.to_string(),
