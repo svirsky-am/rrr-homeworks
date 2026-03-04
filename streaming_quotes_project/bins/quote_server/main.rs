@@ -255,12 +255,25 @@ fn handle_client_subscription(
     clients: Arc<Mutex<HashMap<SocketAddr, ClientSession>>>,
     broadcaster: Arc<QuoteBroadcaster>,
 ) -> QuoteResult<()> {
-    let mut reader = std::io::BufReader::new(tcp_stream.try_clone().unwrap());
+
+    let tcp_stream_clone = match tcp_stream.try_clone() {
+        Ok(stream) => stream,
+        Err(e) => {
+            error!("Failed to clone TCP stream for client: {}", e);
+            let _ = tcp_stream.write_all(b"ERROR: Failed to process connection\n");
+            let _ = tcp_stream.flush();
+            return Ok(());
+        }
+    };
+    
+    let mut reader = std::io::BufReader::new(tcp_stream_clone);
     let mut command = String::new();
 
-    reader
-        .read_line(&mut command)
-        .map_err(|e| QuoteError::SendError(e))?;
+    // Read the command line
+    if let Err(e) = reader.read_line(&mut command) {
+        error!("Failed to read command from client: {}", e);
+        return Ok(());
+    }
 
     let command = command.trim();
     debug!("TCP_COMMAND_RECEIVED: {}", command);
@@ -274,7 +287,16 @@ fn handle_client_subscription(
 
     // Register client in shared registry
     {
-        let mut clients_guard = clients.lock().unwrap();
+        let mut clients_guard = match clients.lock() {
+            Ok(client_lock) => client_lock,
+            Err(e) => {
+                error!("Failed to register client: {}", e);
+                let _ = tcp_stream.write_all(b"ERROR: Failed to process connection\n");
+                let _ = tcp_stream.flush();
+                return Ok(());
+            }
+        };
+
         clients_guard.insert(
             client_udp_addr,
             ClientSession {
@@ -318,14 +340,22 @@ fn handle_client_subscription(
 
     // Clean up client session
     {
-        let mut clients_guard = clients.lock().unwrap();
+        let mut clients_guard = match clients.lock() {
+            Ok(client_lock) => client_lock,
+            Err(e) => {
+                error!("Failed to clean up client: {}", e);
+                let _ = tcp_stream.write_all(b"ERROR: Failed to process connection\n"); // TODO: Стоит ли говорить об этом клиенту ?
+                let _ = tcp_stream.flush();
+                return Ok(());
+            }
+        };
+
         clients_guard.remove(&client_udp_addr);
         debug!("CLIENT_SESSION_ENDED addr={}", client_udp_addr);
     }
 
     Ok(())
 }
-
 /// Runs the UDP sender thread for a single client.
 ///
 /// Receives QuoteBatch from generator, filters by subscribed tickers,

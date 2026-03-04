@@ -156,7 +156,9 @@ fn main() -> QuoteResult<()> {
     tcp_stream.write_all(stream_cmd.as_bytes())?;
     tcp_stream.flush()?;
 
-    let mut reader = std::io::BufReader::new(tcp_stream.try_clone().unwrap());
+    let tcp_stream_clone = tcp_stream.try_clone()
+        .map_err(|e| QuoteError::SendError(e))?;
+    let mut reader = std::io::BufReader::new(tcp_stream_clone);
     let mut response = String::new();
     reader.read_line(&mut response)?;
     info!("CLIENT_SERVER_RESPONSE: {}", response.trim());
