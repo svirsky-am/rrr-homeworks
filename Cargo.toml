@@ -1,8 +1,8 @@
 [workspace]
 members = [
     "streaming_quotes_project", 
-    #"rr-parser-lib",
-    #"rr-file-processor", 
+    "rr-parser-lib",
+    "rr-file-processor", 
 # "sandbox_env", 
 ]
 resolver = "2"

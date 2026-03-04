@@ -96,6 +96,14 @@ pub fn is_supported_ticker(ticker: &str) -> bool {
     SUPPORTED_TICKERS.contains(&ticker)
 }
 
+
+fn get_cur_timestamp () -> u64 {
+    SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0)
+}
+
 /// Batch of quotes generated at the same time for all tickers.
 #[derive(Debug, Clone)]
 pub struct QuoteBatch {
@@ -108,10 +116,7 @@ pub struct QuoteBatch {
 impl QuoteBatch {
     /// Creates a new batch from individual quotes.
     pub fn new(quotes: Vec<StockQuote>) -> Self {
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0);
+        let timestamp = get_cur_timestamp();
 
         QuoteBatch { quotes, timestamp }
     }
@@ -223,10 +228,7 @@ impl QuoteGenerator {
         let volume_category = VolumeCategory::for_ticker(ticker);
         let volume = volume_category.generate_volume();
 
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as u64;
+        let timestamp = get_cur_timestamp();
 
         Some(StockQuote {
             ticker: ticker.to_string(),
