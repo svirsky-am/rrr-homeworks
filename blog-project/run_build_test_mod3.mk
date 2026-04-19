@@ -5,3 +5,7 @@ mod3_run_cli:
 PHONY: mod3_build_all
 mod3_build_all: 
 	cargo build -p  "blog-*"
+
+PHONY: mod3_server_test
+mod3_server_test: 
+	cargo test -p  "blog-server"
