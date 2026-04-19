@@ -1,8 +1,12 @@
 [workspace]
 members = [
-    "streaming_quotes_project", 
+# module 1
+    "streaming_quotes_project",
+# module 2
     "rr-parser-lib",
     "rr-file-processor", 
+# module3
+    "blog-project/*", 
 # "sandbox_env", 
 ]
 resolver = "2"
