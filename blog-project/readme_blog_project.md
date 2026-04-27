@@ -40,36 +40,43 @@ make mod3_build_all
 export HOST=127.0.0.1
 export PORT=8080
 export JWT_SECRET=dev_super_secret_change_me_please
-export  CORS_ORIGINS=http://localhost:3000
+export  CORS_ORIGINS=http://localhost:8080
 export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/bank_api
 
 ```
 Проверка 
 Регистрация:
 ```sh
-curl -X POST http://localhost:8080/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "secure123"}'
+  curl -X POST http://localhost:8080/api/auth/register \
+    -H "Content-Type: application/json" \
+    -d '{"email": "user@example.com", "password": "secure123"}'
 ```
 Логин:
 ```sh 
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email": "user@example.com", "password": "secure123"}'
+# или 
+TOKEN_CLIENT=$(curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "secure123"}' \
+  | jq -r '.access_token')
+
+echo $TOKEN_CLIENT
+
 
 ```
 Получаем JWT-токен и Создание счёта с JWT:
 ```sh
-export TOKEN=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJmODYyNjI0Yy1mZTJkLTQxOTgtOWJmYy03ODUyYWNiYzIwMWEiLCJleHAiOjE3NzY2Mzg3MzcsImlhdCI6MTc3NjYzNTEzN30.kmrpjgEhvmLyXEm-cpZ6VPc9hfD-2JrGfC7TftF8K8s
 ```
 c# 4. Создание счёта с JWT
 ```sh
-curl -X POST http://localhost:8080/accounts \
+curl -X POST http://localhost:8080/api/accounts \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"id": 5, "initial": 1000}'
+  -H "Authorization: Bearer $TOKEN_CLIENT" \
+  -d '{"id": 1, "initial": 1000}'
 # Ответ: {"id": 1}
-```
+```5
 # 5. Проверка баланса
 ```sh
 curl -X GET http://localhost:8080/accounts/5 \

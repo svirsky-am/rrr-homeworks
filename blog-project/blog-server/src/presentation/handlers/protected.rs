@@ -10,8 +10,18 @@ use crate::presentation::dto::{
     AccountResponse, AmountRequest, CreateAccountRequest, ExchangeResponse, TransferRequest,
 };
 
+
+
+// pub(crate) async fn test_route() -> HttpResponse {
+//     HttpResponse::Ok().json(serde_json::json!({
+//         "status": "ok",
+//         "message": "Protected route works!"
+//     }))
+// }
+
 pub fn scope() -> Scope {
-    web::scope("")
+    web::scope("/protected")
+        .service(check_protect)
         .service(create_account)
         .service(list_accounts)
         .service(get_account)
@@ -29,7 +39,21 @@ fn ensure_owner(account: &AccountResponse, user: &AuthenticatedUser) -> Result<(
     }
 }
 
-#[post("/accounts")]
+#[get("/check")]
+async fn check_protect(
+    // req: HttpRequest,
+    // user: AuthenticatedUser,
+    // bank: web::Data<BankService<PostgresAccountRepository>>,
+    // payload: web::Json<CreateAccountRequest>,
+) -> Result<HttpResponse, BankError> {
+    Ok(    HttpResponse::Ok().json(serde_json::json!({
+        "status": "ok",
+        "message": "Protected route works!"
+    })))
+}
+
+
+#[post("accounts")]
 async fn create_account(
     req: HttpRequest,
     user: AuthenticatedUser,
@@ -51,7 +75,7 @@ async fn create_account(
     Ok(HttpResponse::Created().json(response))
 }
 
-#[get("/accounts")]
+#[get("accounts")]
 async fn list_accounts(
     req: HttpRequest,
     user: AuthenticatedUser,
@@ -70,7 +94,7 @@ async fn list_accounts(
     Ok(HttpResponse::Ok().json(response))
 }
 
-#[get("/accounts/{id}")]
+#[get("accounts/{id}")]
 async fn get_account(
     req: HttpRequest,
     user: AuthenticatedUser,
@@ -91,7 +115,7 @@ async fn get_account(
     Ok(HttpResponse::Ok().json(response))
 }
 
-#[post("/accounts/{id}/deposit")]
+#[post("accounts/{id}/deposit")]
 async fn deposit(
     req: HttpRequest,
     user: AuthenticatedUser,
@@ -118,7 +142,7 @@ async fn deposit(
     Ok(HttpResponse::Ok().json(response))
 }
 
-#[post("/accounts/{id}/withdraw")]
+#[post("accounts/{id}/withdraw")]
 async fn withdraw(
     req: HttpRequest,
     user: AuthenticatedUser,
@@ -145,7 +169,7 @@ async fn withdraw(
     Ok(HttpResponse::Ok().json(response))
 }
 
-#[post("/transfers")]
+#[post("transfers")]
 async fn transfer(
     req: HttpRequest,
     user: AuthenticatedUser,
@@ -171,7 +195,7 @@ async fn transfer(
     Ok(HttpResponse::Ok().json(serde_json::json!({ "status": "transferred" })))
 }
 
-#[get("/exchange/{from}/{to}")]
+#[get("exchange/{from}/{to}")]
 async fn exchange_rate(
     service: web::Data<ExchangeService>,
     path: web::Path<(String, String)>,

@@ -9,6 +9,7 @@ use crate::domain::{user::User, DomainError};
 pub trait UserRepository: Send + Sync {
     async fn create(&self, user: User) -> Result<User, DomainError>;
     async fn find_by_email(&self, email: &str) -> Result<Option<User>, DomainError>;
+    async fn find_by_username(&self, username: &str) -> Result<Option<User>, DomainError>;
     async fn find_by_id(&self, id: Uuid) -> Result<Option<User>, DomainError>;
 }
 
@@ -28,11 +29,12 @@ impl UserRepository for PostgresUserRepository {
     async fn create(&self, user: User) -> Result<User, DomainError> {
         sqlx::query(
             r#"
-            INSERT INTO users (id, email, password_hash)
-            VALUES ($1, $2, $3)
+            INSERT INTO users (id, username, email, password_hash)
+            VALUES ($1, $2, $3, $4)
             "#,
         )
         .bind(user.id)
+        .bind(&user.username)
         .bind(&user.email)
         .bind(&user.password_hash)
         .execute(&self.pool)
@@ -41,10 +43,10 @@ impl UserRepository for PostgresUserRepository {
             error!("failed to create user: {}", e);
             if e.as_database_error()
                 .and_then(|db| db.constraint())
-                .map(|c| c.contains("users_email"))
+                .map(|c| c.contains("users_email") || c.contains("users_username"))
                 == Some(true)
             {
-                DomainError::Validation("email already registered".into())
+                DomainError::Validation("email or username already registered".into())
             } else {
                 DomainError::Internal(format!("database error: {}", e))
             }
@@ -57,7 +59,7 @@ impl UserRepository for PostgresUserRepository {
     async fn find_by_email(&self, email: &str) -> Result<Option<User>, DomainError> {
         let row = sqlx::query(
             r#"
-            SELECT id, email, password_hash, created_at
+            SELECT id, username, email, password_hash, created_at
             FROM users
             WHERE email = $1
             "#,
@@ -72,6 +74,32 @@ impl UserRepository for PostgresUserRepository {
 
         Ok(row.map(|row| User {
             id: row.get("id"),
+            username: row.get("username"),
+            email: row.get("email"),
+            password_hash: row.get("password_hash"),
+            created_at: row.get("created_at"),
+        }))
+    }
+
+    async fn find_by_username(&self, username: &str) -> Result<Option<User>, DomainError> {
+        let row = sqlx::query(
+            r#"
+            SELECT id, username, email, password_hash, created_at
+            FROM users
+            WHERE username = $1
+            "#,
+        )
+        .bind(username)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| {
+            error!("failed to find user by username {}: {}", username, e);
+            DomainError::Internal(format!("database error: {}", e))
+        })?;
+
+        Ok(row.map(|row| User {
+            id: row.get("id"),
+            username: row.get("username"),
             email: row.get("email"),
             password_hash: row.get("password_hash"),
             created_at: row.get("created_at"),
@@ -81,7 +109,7 @@ impl UserRepository for PostgresUserRepository {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<User>, DomainError> {
         let row = sqlx::query(
             r#"
-            SELECT id, email, password_hash, created_at
+            SELECT id, username, email, password_hash, created_at
             FROM users
             WHERE id = $1
             "#,
@@ -96,6 +124,7 @@ impl UserRepository for PostgresUserRepository {
 
         Ok(row.map(|row| User {
             id: row.get("id"),
+            username: row.get("username"),
             email: row.get("email"),
             password_hash: row.get("password_hash"),
             created_at: row.get("created_at"),

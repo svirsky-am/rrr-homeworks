@@ -8,7 +8,9 @@ pub struct AppConfig {
     pub jwt_secret: String,
     #[serde(default)]
     pub cors_origins: Vec<String>,
+    pub allowed_cors: bool,
     pub exchange_api_url: String,
+    
 }
 
 impl AppConfig {
@@ -32,7 +34,7 @@ impl AppConfig {
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
             .collect();
-
+        let allowed_cors  = false;
         Ok(Self {
             host,
             port,
@@ -40,6 +42,7 @@ impl AppConfig {
             jwt_secret,
             cors_origins,
             exchange_api_url,
+            allowed_cors
         })
     }
 }

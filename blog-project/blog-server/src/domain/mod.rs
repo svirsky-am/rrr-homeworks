@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-pub use error::{BankError, DomainError};
+pub use error::{BankError, BlogError, DomainError};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Account {
