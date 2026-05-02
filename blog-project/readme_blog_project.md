@@ -1,34 +1,43 @@
+
+# Подготовка к сборке и запусу
+
 # PostgreSQL
 ```sh
 sudo apt update
 sudo apt install postgresql-14 postgresql-client-14
+sudo apt-get install protobuf-compiler
+protoc --version # Для tonic 0.10+ рекомендуется protoc версии 3.15+.
 ```
-# Запуск и автозапуск
+
+Отключить хостовый postgresql-сервер
 ```sh
-sudo systemctl start postgresql
-#sudo systemctl enable postgresql
+sudo systemctl stop postgresql
 ```
 # Создать БД и задать пароль суперпользователю postgres
 ```sh
-sudo -u postgres psql -c "CREATE DATABASE practice_db;"
+export DATABASE_URL=postgres://blog_admin:blog_pass@127.0.0.1:8432/r_blog_base
 
-sudo -u postgres psql -c "DROP DATABASE bank_api;"
+export POSTRES_WORKDIR=.postgres_workdir/pgdata
+	mkdir -p .logs
+	pkill -9 postgres | true
+	rm -rf ${POSTRES_WORKDIR}
+	/usr/lib/postgresql/14/bin/initdb -D $POSTRES_WORKDIR
+	cp -f blog-project/blog-server/scripts/* $POSTRES_WORKDIR/
+	/usr/lib/postgresql/14/bin/pg_ctl -D $POSTRES_WORKDIR -l .logs/logfile_pg.log start
+```
+```sh
+cd blog-project/blog-server
+# 1. Применить миграции (если БД пуста)
+cargo sqlx migrate run --database-url="$DATABASE_URL"
 
+# 2. Создать кэш схемы для compile-time SQL checks
+cargo sqlx prepare -- --database-url="$DATABASE_URL"
 
+# 3. Собрать проект
+cargo build -p blog-server
 
-
-
-export CUR_USER=$USER
-sudo -u postgres psql -c "CREATE ROLE $CUR_USER WITH LOGIN;";
-sudo -u postgres psql -c "ALTER ROLE $CUR_USER WITH SUPERUSER;"
-sudo -u postgres psql -c "ALTER ROLE $CUR_USER CREATEDB;"
-psql -c "CREATE USER blog_admin WITH PASSWORD 'blog_pass'";
-sudo -u postgres psql -c "ALTER ROLE blog_admin CREATEDB;"
-
-GPASSWORD=blog_pass psql -U blog_admin  -h localhost -d postgres -c "CREATE DATABASE bank_api;"
-
-sudo systemctl reload postgresql
-
+# 4. Запустить
+cargo run -p blog-server
 
 ```
 Запуск сервера с пересозданием базы:
@@ -41,7 +50,7 @@ export HOST=127.0.0.1
 export PORT=8080
 export JWT_SECRET=dev_super_secret_change_me_please
 export  CORS_ORIGINS=http://localhost:8080
-export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/bank_api
+export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:8432/bank_api
 
 ```
 Проверка 
@@ -63,30 +72,22 @@ TOKEN_CLIENT=$(curl -X POST http://localhost:8080/api/auth/login \
   | jq -r '.access_token')
 
 echo $TOKEN_CLIENT
-
-
 ```
-Получаем JWT-токен и Создание счёта с JWT:
-```sh
-```
-c# 4. Создание счёта с JWT
-```sh
-curl -X POST http://localhost:8080/api/accounts \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN_CLIENT" \
-  -d '{"id": 1, "initial": 1000}'
-# Ответ: {"id": 1}
-```5
-# 5. Проверка баланса
-```sh
-curl -X GET http://localhost:8080/accounts/5 \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN"
-# Ответ: {"id": 1, "balance": 1000}
-```
-# 6. Попытка доступа без токена (должна вернуть 401)
+# Проверка gRPC через grpcurl
 
 ```sh
-curl -X GET http://localhost:8080/api/accounts/1
-# Ответ: {"error": "missing bearer"} 
+# Установите grpcurl (если нет)
+go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
+
+# Проверить список сервисов
+grpcurl -plaintext localhost:50051 list
+
+# Вызов метода (без аутентификации)
+grpcurl -plaintext -d '{"limit": 5}' localhost:50051 blog.BlogService/ListPosts
+
+# Вызов с токеном
+grpcurl -plaintext \
+  -H "authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{"title": "Hello", "content": "World"}' \
+  localhost:50051 blog.BlogService/CreatePost
 ```

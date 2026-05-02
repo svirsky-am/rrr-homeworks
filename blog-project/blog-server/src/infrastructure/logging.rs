@@ -1,18 +1,8 @@
-use tracing_subscriber::{fmt, EnvFilter};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-pub fn init_logging() {
-    let filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info,bank_api=debug"))
-        .unwrap();
-
-    let subscriber = fmt()
-        .with_env_filter(filter)
-        .with_target(false)
-        .with_level(true)
-        .with_timer(fmt::time::UtcTime::rfc_3339())
-        .json()
-        .finish();
-
-    let _ = tracing::subscriber::set_global_default(subscriber);
+pub fn init() {
+    tracing_subscriber::registry()
+        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info,blog_server=debug".into()))
+        .with(tracing_subscriber::fmt::layer())
+        .init();
 }
-
