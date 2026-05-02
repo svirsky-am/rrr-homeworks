@@ -1,134 +1,70 @@
-use async_trait::async_trait;
-use sqlx::{PgPool, Row};
-use tracing::{error, info};
-use uuid::Uuid;
-
-use crate::domain::{user::User, DomainError};
-
-#[async_trait]
-pub trait UserRepository: Send + Sync {
-    async fn create(&self, user: User) -> Result<User, DomainError>;
-    async fn find_by_email(&self, email: &str) -> Result<Option<User>, DomainError>;
-    async fn find_by_username(&self, username: &str) -> Result<Option<User>, DomainError>;
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<User>, DomainError>;
-}
+use sqlx::PgPool;
+use crate::domain::{User, RegisterRequest, DomainError, AppResult};
+use argon2::{password_hash::SaltString, Argon2, PasswordHasher, PasswordVerifier};
+use rand::rngs::OsRng;
 
 #[derive(Clone)]
-pub struct PostgresUserRepository {
-    pool: PgPool,
-}
+pub struct UserRepository { pool: PgPool }
 
-impl PostgresUserRepository {
-    pub fn new(pool: PgPool) -> Self {
-        Self { pool }
-    }
-}
+impl UserRepository {
+    pub fn new(pool: PgPool) -> Self { Self { pool } }
 
-#[async_trait]
-impl UserRepository for PostgresUserRepository {
-    async fn create(&self, user: User) -> Result<User, DomainError> {
-        sqlx::query(
+    pub async fn create(&self, req: RegisterRequest) -> AppResult<User> {
+        // Хешируем пароль через Argon2
+        let salt = SaltString::generate(&mut OsRng);
+        let password_hash = Argon2::default()
+            .hash_password(req.password.as_bytes(), &salt)
+            .map_err(|e| DomainError::Hash(e.to_string()))?
+            .to_string();
+
+        let user = sqlx::query_as!(
+            User,
             r#"
-            INSERT INTO users (id, username, email, password_hash)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO users (username, email, password_hash)
+            VALUES ($1, $2, $3)
+            RETURNING id, username, email, password_hash, created_at
             "#,
+            req.username,
+            req.email,
+            password_hash
         )
-        .bind(user.id)
-        .bind(&user.username)
-        .bind(&user.email)
-        .bind(&user.password_hash)
-        .execute(&self.pool)
+        .fetch_one(&self.pool)
         .await
-        .map_err(|e| {
-            error!("failed to create user: {}", e);
-            if e.as_database_error()
-                .and_then(|db| db.constraint())
-                .map(|c| c.contains("users_email") || c.contains("users_username"))
-                == Some(true)
-            {
-                DomainError::Validation("email or username already registered".into())
-            } else {
-                DomainError::Internal(format!("database error: {}", e))
-            }
+        .map_err(|e| match e {
+            sqlx::Error::Database(db_err) if db_err.is_unique_violation() => 
+                DomainError::UserAlreadyExists,
+            _ => DomainError::Database(e),
         })?;
 
-        info!(user_id = %user.id, email = %user.email, "user created");
         Ok(user)
     }
 
-    async fn find_by_email(&self, email: &str) -> Result<Option<User>, DomainError> {
-        let row = sqlx::query(
-            r#"
-            SELECT id, username, email, password_hash, created_at
-            FROM users
-            WHERE email = $1
-            "#,
+    pub async fn find_by_username(&self, username: &str) -> AppResult<Option<User>> {
+        Ok(sqlx::query_as!(
+            User,
+            r#"SELECT id, username, email, password_hash, created_at FROM users WHERE username = $1"#,
+            username
         )
-        .bind(email)
         .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| {
-            error!("failed to find user by email {}: {}", email, e);
-            DomainError::Internal(format!("database error: {}", e))
-        })?;
-
-        Ok(row.map(|row| User {
-            id: row.get("id"),
-            username: row.get("username"),
-            email: row.get("email"),
-            password_hash: row.get("password_hash"),
-            created_at: row.get("created_at"),
-        }))
+        .await?)
     }
 
-    async fn find_by_username(&self, username: &str) -> Result<Option<User>, DomainError> {
-        let row = sqlx::query(
-            r#"
-            SELECT id, username, email, password_hash, created_at
-            FROM users
-            WHERE username = $1
-            "#,
+    pub async fn find_by_id(&self, id: i64) -> AppResult<Option<User>> {
+        Ok(sqlx::query_as!(
+            User,
+            r#"SELECT id, username, email, password_hash, created_at FROM users WHERE id = $1"#,
+            id
         )
-        .bind(username)
         .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| {
-            error!("failed to find user by username {}: {}", username, e);
-            DomainError::Internal(format!("database error: {}", e))
-        })?;
-
-        Ok(row.map(|row| User {
-            id: row.get("id"),
-            username: row.get("username"),
-            email: row.get("email"),
-            password_hash: row.get("password_hash"),
-            created_at: row.get("created_at"),
-        }))
+        .await?)
     }
 
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<User>, DomainError> {
-        let row = sqlx::query(
-            r#"
-            SELECT id, username, email, password_hash, created_at
-            FROM users
-            WHERE id = $1
-            "#,
-        )
-        .bind(id)
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| {
-            error!("failed to find user by id {}: {}", id, e);
-            DomainError::Internal(format!("database error: {}", e))
-        })?;
-
-        Ok(row.map(|row| User {
-            id: row.get("id"),
-            username: row.get("username"),
-            email: row.get("email"),
-            password_hash: row.get("password_hash"),
-            created_at: row.get("created_at"),
-        }))
+    pub fn verify_password(&self, password: &str, hash: &str) -> AppResult<bool> {
+        let parsed_hash = argon2::PasswordHash::new(hash)
+            .map_err(|e| DomainError::Hash(e.to_string()))?;
+        
+        Ok(Argon2::default()
+            .verify_password(password.as_bytes(), &parsed_hash)
+            .is_ok())
     }
 }
-

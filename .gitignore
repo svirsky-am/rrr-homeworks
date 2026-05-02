@@ -4,3 +4,5 @@ balance.csv
 .vscode
 .staff
 output
+.postgres_workdir
+.logs
