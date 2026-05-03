@@ -2,7 +2,6 @@
 use tonic::{Request, Response, Status};
 use std::sync::Arc;
 
-// ✅ Импортируем из crate::blog, а не из blog
 use crate::blog::blog_service_server::BlogService as GrpcBlogService;
 use crate::blog::{
     RegisterRequest, LoginRequest, AuthResponse, PostId, Post as GrpcPost, 
@@ -92,6 +91,9 @@ impl GrpcBlogService for BlogGrpcService {
                     user: Some(grpc_user),
                 }))
             }
+            Err(crate::domain::DomainError::Validation(msg)) => {
+                Err(Status::invalid_argument(msg))  // 400 InvalidArgument
+            }
             Err(crate::domain::DomainError::UserAlreadyExists) => 
                 Err(Status::already_exists("User already exists")),
             Err(e) => Err(Status::internal(e.to_string())),
@@ -116,8 +118,14 @@ impl GrpcBlogService for BlogGrpcService {
                     user: Some(grpc_user),
                 }))
             }
-            Err(crate::domain::DomainError::InvalidCredentials) => 
-                Err(Status::unauthenticated("Invalid credentials")),
+            // Валидация -> InvalidArgument
+            Err(crate::domain::DomainError::Validation(msg)) => {
+                Err(Status::invalid_argument(msg))
+            }
+            // Неверные креды -> Unauthenticated
+            Err(crate::domain::DomainError::InvalidCredentials) => {
+                Err(Status::unauthenticated("Invalid credentials"))
+            }
             Err(e) => Err(Status::internal(e.to_string())),
         }
     }
@@ -180,6 +188,9 @@ impl GrpcBlogService for BlogGrpcService {
             Ok(post) => Ok(Response::new(PostResponse {
                 post: Some(self.domain_to_grpc_post(post)),
             })),
+            Err(crate::domain::DomainError::Validation(msg)) => {
+                Err(Status::invalid_argument(msg))
+            }
             Err(e) => Err(Status::invalid_argument(e.to_string())),
         }
     }

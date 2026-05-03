@@ -14,29 +14,26 @@ pub struct AuthenticatedUser {
     pub username: String,
 }
 
-// ✅ Исправленная функция: используем match для избежания borrow/move конфликта
 pub async fn jwt_validator(
     req: ServiceRequest,
     credentials: BearerAuth,
 ) -> Result<ServiceRequest, (Error, ServiceRequest)> {
     
-    // ✅ 1. Извлекаем jwt_service через match (без closure, который захватывает req)
     let jwt_service = match req.app_data::<web::Data<JwtService>>() {
         Some(service) => service,
         None => {
             let err = ErrorUnauthorized("JWT service not configured");
-            return Err((err, req));  // ✅ Возвращаем сразу — нет конфликта заимствований
+            return Err((err, req));
         }
     };
 
     let token = credentials.token();
 
-    // ✅ 2. Проверяем токен
     let claims = match jwt_service.verify_token(token) {
         Ok(c) => c,
         Err(_) => {
             let err = ErrorUnauthorized("Invalid token");
-            return Err((err, req));  // ✅ Возвращаем сразу
+            return Err((err, req)); 
         }
     };
 
@@ -45,7 +42,6 @@ pub async fn jwt_validator(
         username: claims.username,
     };
 
-    // ✅ 3. req больше не заимствован — можно безопасно модифицировать
     req.extensions_mut().insert(auth_user);
     Ok(req)
 }
@@ -57,4 +53,3 @@ pub fn get_authenticated_user(req: &actix_web::HttpRequest) -> Result<Authentica
         .cloned()
         .ok_or(DomainError::Forbidden)
 }
-
