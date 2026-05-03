@@ -9,7 +9,7 @@ use web_sys::{window, Storage};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
-    pub id: i64,
+    pub id: i32,
     pub username: String,
     pub email: String,
     pub created_at: String,
@@ -23,10 +23,10 @@ pub struct AuthResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Post {
-    pub id: i64,
+    pub id: i32,
     pub title: String,
     pub content: String,
-    pub author_id: i64,
+    pub author_id: i32,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -34,9 +34,9 @@ pub struct Post {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ListPostsResponse {
     pub posts: Vec<Post>,
-    pub total: i64,
-    pub limit: i64,
-    pub offset: i64,
+    pub total: i32,
+    pub limit: i32,
+    pub offset: i32,
 }
 
 // === Основной WASM-экспорт ===
@@ -63,13 +63,15 @@ impl BlogApp {
     /// Регистрация
     #[wasm_bindgen]
     pub async fn register(&self, username: String, email: String, password: String) -> Result<JsValue, JsValue> {
+        let body_str = serde_json::to_string(&serde_json::json!({
+            "username": username,
+            "email": email,
+            "password": password
+        })).map_err(|e| JsValue::from_str(&format!("Serialize error: {}", e)))?;
+        
         let resp = Request::post(&format!("{}/api/auth/register", self.server_url))
             .header("Content-Type", "application/json")
-            .body(serde_json::json!({
-                "username": username,
-                "email": email,
-                "password": password
-            }))
+            .body(body_str)  // ✅ Теперь передаём JsValue
             .map_err(|e| JsValue::from_str(&format!("Request error: {}", e)))?
             .send()
             .await
@@ -94,12 +96,15 @@ impl BlogApp {
     /// Логин
     #[wasm_bindgen]
     pub async fn login(&self, username: String, password: String) -> Result<JsValue, JsValue> {
+        let body_str = serde_json::to_string(&serde_json::json!({
+            "username": username,
+            "password": password
+        })).map_err(|e| JsValue::from_str(&format!("Serialize error: {}", e)))?;
+        
+        
         let resp = Request::post(&format!("{}/api/auth/login", self.server_url))
             .header("Content-Type", "application/json")
-            .body(serde_json::json!({
-                "username": username,
-                "password": password
-            }))
+            .body(body_str)
             .map_err(|e| JsValue::from_str(&format!("Request error: {}", e)))?
             .send()
             .await
@@ -127,7 +132,7 @@ impl BlogApp {
     
     /// Загрузка списка постов
     #[wasm_bindgen]
-    pub async fn load_posts(&self, limit: Option<i64>, offset: Option<i64>) -> Result<JsValue, JsValue> {
+    pub async fn load_posts(&self, limit: Option<i32>, offset: Option<i32>) -> Result<JsValue, JsValue> {
         let mut url = format!("{}/api/posts", self.server_url);
         let mut params = Vec::new();
         if let Some(l) = limit { params.push(format!("limit={}", l)); }
@@ -155,7 +160,7 @@ impl BlogApp {
     
     /// Получение поста по ID
     #[wasm_bindgen]
-    pub async fn get_post(&self, id: i64) -> Result<JsValue, JsValue> {
+    pub async fn get_post(&self, id: i32) -> Result<JsValue, JsValue> {
         let resp = Request::get(&format!("{}/api/posts/{}", self.server_url, id))
             .send()
             .await
@@ -182,13 +187,15 @@ impl BlogApp {
         let token = self.get_token()
             .ok_or_else(|| JsValue::from_str("Not authenticated"))?;
         
+        let body_str = serde_json::to_string(&serde_json::json!({
+            "title": title,
+            "content": content
+        })).map_err(|e| JsValue::from_str(&format!("Serialize error: {}", e)))?;
+        
         let resp = Request::post(&format!("{}/api/posts", self.server_url))
             .header("Content-Type", "application/json")
             .header("Authorization", &format!("Bearer {}", token))
-            .body(serde_json::json!({
-                "title": title,
-                "content": content
-            }))
+            .body(body_str)
             .map_err(|e| JsValue::from_str(&format!("Request error: {}", e)))?
             .send()
             .await
@@ -208,23 +215,26 @@ impl BlogApp {
     
     /// Обновление поста (требует токен, только автор)
     #[wasm_bindgen]
-    pub async fn update_post(&self, id: i64, title: Option<String>, content: Option<String>) -> Result<JsValue, JsValue> {
+    pub async fn update_post(&self, id: i32, title: Option<String>, content: Option<String>) -> Result<JsValue, JsValue> {
         let token = self.get_token()
             .ok_or_else(|| JsValue::from_str("Not authenticated"))?;
         
-        let mut data = serde_json::json!({});
-        if let Some(t) = title { data["title"] = serde_json::Value::String(t); }
-        if let Some(c) = content { data["content"] = serde_json::Value::String(c); }
+         let mut data = serde_json::Map::new();
+        if let Some(t) = title { data.insert("title".into(), serde_json::Value::String(t)); }
+        if let Some(c) = content { data.insert("content".into(), serde_json::Value::String(c)); }
+        
+        let body_str = serde_json::to_string(&data)
+            .map_err(|e| JsValue::from_str(&format!("Serialize error: {}", e)))?;
         
         let resp = Request::put(&format!("{}/api/posts/{}", self.server_url, id))
             .header("Content-Type", "application/json")
             .header("Authorization", &format!("Bearer {}", token))
-            .body(data)
+            .body(body_str)
             .map_err(|e| JsValue::from_str(&format!("Request error: {}", e)))?
             .send()
             .await
             .map_err(|e| JsValue::from_str(&format!("Send error: {}", e)))?;
-        
+            
         if resp.status() == 404 {
             return Err(JsValue::from_str("Post not found"));
         }
@@ -245,7 +255,7 @@ impl BlogApp {
     
     /// Удаление поста (требует токен, только автор)
     #[wasm_bindgen]
-    pub async fn delete_post(&self, id: i64) -> Result<(), JsValue> {
+    pub async fn delete_post(&self, id: i32) -> Result<(), JsValue> {
         let token = self.get_token()
             .ok_or_else(|| JsValue::from_str("Not authenticated"))?;
         
