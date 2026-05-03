@@ -1,3 +1,15 @@
+# 📝 Blog Project
+
+Полноценное рабочее пространство (workspace) с бэкендом, клиентской библиотекой, CLI и WASM-фронтендом.
+
+## 🏗️ Архитектура
+
+├── blog-server/ # Actix-web + SQLx + gRPC сервер
+├── blog-client/ # Библиотека клиента (HTTP + gRPC)
+├── blog-cli/ # CLI-интерфейс на базе blog-client
+└── blog-wasm/ # WASM-фронтенд (только HTTP)
+
+
 
 # Подготовка к сборке и запусу
 
@@ -7,6 +19,8 @@ sudo apt update
 sudo apt install postgresql-14 postgresql-client-14
 sudo apt-get install protobuf-compiler
 protoc --version # Для tonic 0.10+ рекомендуется protoc версии 3.15+.
+cargo install wasm-pack --locked
+
 ```
 
 Отключить хостовый postgresql-сервер
@@ -102,3 +116,48 @@ InvalidCredentials | Unauthenticated | 401 Unauthorized
 Forbidden | PermissionDenied | 403 Forbidden
 NotFound | NotFound | 404 Not Found
 Database, Jwt, Internal  |  Internal | 500 Internal Server Error
+
+
+
+
+Тестирование через CLI
+
+```sh
+# Регистрация
+cargo run -p blog-cli -- register -u testuser -e test@example.com -p pass123
+# Логин
+cargo run -p blog-cli -- login -u testuser -p pass123
+# Создание поста
+cargo run -p blog-cli -- create -t "Hello" -c "World"
+# Список постов
+cargo run -p blog-cli -- list
+# Через gRPC (добавьте флаг --grpc)
+cargo run -p blog-cli -- --grpc list
+```
+
+Запуск WASM-фронтенда
+
+```sh
+# Сборка WASM-модуля
+cd blog-wasm
+wasm-pack build --target web
+
+# Запуск локального сервера
+cd ..
+python3 -m http.server 8000 --directory blog-wasm
+
+# Откройте в браузере:
+# http://localhost:8000
+```
+
+
+## Синхронизация proto-схем
+При изменении blog.proto:
+```sh 
+# 1. Обновите файл в blog-server/proto/
+# 2. Скопируйте в blog-client/proto/
+cp blog-server/proto/blog.proto blog-client/proto/
+# 3. Пересоберите оба крейта
+cargo build -p blog-server
+cargo build -p blog-client
+```

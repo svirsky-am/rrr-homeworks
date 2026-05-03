@@ -1,7 +1,29 @@
 [package]
 name = "blog-wasm"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
-crate-type = ["cdylib"]
+[lib]
+crate-type = ["cdylib"]  # ← Обязательно для WASM!
+
 [dependencies]
+# WASM-specific
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+serde-wasm-bindgen.workspace = true
+web-sys.workspace = true
+gloo-net.workspace = true
+
+console_error_panic_hook = "0.1"
+
+# Общие
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+
+# HTTP (только, gRPC не работает в браузере без сложной настройки)
+reqwest = { workspace = true, features = ["json"], default-features = false }
+
+[profile.release]
+opt-level = "s"  # Оптимизация по размеру

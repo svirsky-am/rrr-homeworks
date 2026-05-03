@@ -50,15 +50,11 @@ mod3_apply_migration:
 
 	cargo sqlx  prepare --workspace blog-server --database-url=$(DATABASE_URL)
 
-# 	psql -d postgres -c "CREATE USER blog_admin WITH PASSWORD 'blog_pass'" -h /tmp | true;
 # 	psql -U $$USER -h localhost -d postgres "GRANT ALL PRIVILEGES ON DATABASE r_blog_base TO blog_admin;"
 PHONY: mod3_server_run
 mod3_server_run: mod3_reinit_db
 	RUST_LOG=debug  cargo build -p  "blog-server"
 	RUST_LOG=debug  cargo run -p  "blog-server"
-
-
-
 
 
 PHONY: mod3_integration_test_diagnose_faile
@@ -100,3 +96,13 @@ mod3_grpc_integration_test_debug:
 PHONY: mod3_blog_client_build
 mod3_blog_client_build:
 	RUST_LOG=debug  cargo build -p  "blog-client"	
+
+
+PHONY: mod3_blog_cli_build
+mod3_blog_cli_build: mod3_blog_client_build
+	RUST_LOG=debug  cargo build -p  "blog-cli"	
+
+PHONY: mod3_blog_wasm_build
+mod3_blog_wasm_build:
+	bash -C blog-project/blog-wasm/pack_and_run_ui.sh
+	
