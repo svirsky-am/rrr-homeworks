@@ -1,6 +1,14 @@
 [package]
 name = "blog-cli"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
+blog-client = { path = "../blog-client", default-features = false, features = ["http"] }
+tokio.workspace = true
+clap = { version = "4", features = ["derive"] }
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+dotenvy.workspace = true
+anyhow.workspace = true
