@@ -1,7 +1,41 @@
 [package]
 name = "blog-client"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]  # cdylib для WASM, rlib для обычных крейтов
 
 [dependencies]
-clap = { version = "4.5", features = ["derive"] }
+# Workspace зависимости
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+tracing.workspace = true
+
+# HTTP
+reqwest = { workspace = true, optional = true }
+
+# gRPC
+tonic = { workspace = true, optional = true }
+prost = { workspace = true, optional = true }
+
+# WASM-специфичные (условные)
+wasm-bindgen = { workspace = true, optional = true }
+wasm-bindgen-futures = { workspace = true, optional = true }
+serde-wasm-bindgen = { workspace = true, optional = true }
+gloo-net = { workspace = true, optional = true }
+web-sys = { workspace = true, optional = true }
+
+[features]
+default = ["http", "grpc"]
+http = ["dep:reqwest"]
+grpc = ["dep:tonic", "dep:prost"]
+wasm = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:serde-wasm-bindgen", "dep:gloo-net", "dep:web-sys"]
+
+[build-dependencies]
+tonic-build.workspace = true

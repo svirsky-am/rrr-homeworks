@@ -96,3 +96,7 @@ mod3_grpc_integration_test_debug:
 	cargo build -p blog-server
 	TEST_DATABASE_URL=$(TEST_DATABASE_URL) RUST_LOG=tonic=debug  cargo test -p blog-server --test grpc_integration -- --nocapture --test-threads=1
 
+
+PHONY: mod3_blog_client_build
+mod3_blog_client_build:
+	RUST_LOG=debug  cargo build -p  "blog-client"	
