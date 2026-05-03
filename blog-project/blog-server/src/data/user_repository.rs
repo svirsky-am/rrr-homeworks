@@ -3,6 +3,7 @@ use crate::domain::{User, RegisterRequest, DomainError, AppResult};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher, PasswordVerifier};
 use rand::rngs::OsRng;
 
+/// Хешируем пароль через Argon2
 #[derive(Clone)]
 pub struct UserRepository { pool: PgPool }
 
@@ -10,7 +11,7 @@ impl UserRepository {
     pub fn new(pool: PgPool) -> Self { Self { pool } }
 
     pub async fn create(&self, req: RegisterRequest) -> AppResult<User> {
-        // Хешируем пароль через Argon2
+        
         let salt = SaltString::generate(&mut OsRng);
         let password_hash = Argon2::default()
             .hash_password(req.password.as_bytes(), &salt)

@@ -18,14 +18,20 @@ echo "Токен получен (первые 20 символов): ${TOKEN_CLIE
 
 
 # Создание поста (с токеном)
-curl -X POST http://localhost:3000/api/posts \
+curl -X POST http://localhost:3000/api/posts/ \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${TOKEN_CLIENT}" \
   -d '{"title":"Hello","content":"World"}'
 
 
+curl -X GET http://localhost:3000/api/posts/debug/routes \
+  -H "Authorization: Bearer ${TOKEN_CLIENT}"
+
 # Список постов
 curl http://localhost:3000/api/posts?limit=5&offset=0
+curl 
+
+
 
 
 

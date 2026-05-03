@@ -91,3 +91,14 @@ grpcurl -plaintext \
   -d '{"title": "Hello", "content": "World"}' \
   localhost:50051 blog.BlogService/CreatePost
 ```
+
+
+ Таблица конвертации ошибок: DomainError → gRPC Status
+
+| DomainError |gRPC Status | HTTP-аналог
+Validation(msg) | InvalidArgument |400 Bad Request
+UserAlreadyExists | AlreadyExists | 409 Conflict
+InvalidCredentials | Unauthenticated | 401 Unauthorized
+Forbidden | PermissionDenied | 403 Forbidden
+NotFound | NotFound | 404 Not Found
+Database, Jwt, Internal  |  Internal | 500 Internal Server Error
