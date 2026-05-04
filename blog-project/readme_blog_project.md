@@ -25,10 +25,8 @@ cargo install wasm-pack --locked
 ```sh
 sudo systemctl stop postgresql
 ```
-
 # Подготовка БД
 Дельнейшие шаги выполняет make-таргет `mod3_reinit_db`, но если делать самостоятельно , то:
-
 ```sh
 export DATABASE_URL=postgres://blog_admin:blog_pass@127.0.0.1:8432/r_blog_base
 export POSTRES_WORKDIR=.postgres_workdir/pgdata
@@ -56,13 +54,11 @@ cargo sqlx prepare -- --database-url="$DATABASE_URL"
 cargo build -p blog-server
 # 4. Запустить
 cargo run -p blog-server
-
 ```
 или запуск сервера с пересозданием базы:
 ```sh
 make mod3_server_run
 ```
-
 # Пользовательский сценарий после запуска сервера с помощью curl 
 Регистрация:
 ```sh
@@ -87,17 +83,14 @@ curl -X GET http://localhost:3000/api/posts/debug/routes \
 # Список постов
 curl http://localhost:3000/api/posts?limit=5&offset=0
 ```
-
 ## Тесты blog-server
 ### Через make- таргеты
-
 Простой и поддерживаемый вариант:
 ```sh
 make mod3_integration_test_debug
 make mod3_grpc_integration_test_debug 
 ```
-
-### Через sh
+### Через cargo
 ```sh
 export JWT_SECRET=dev_super_secret_change_me_please
 export TEST_DATABASE_URL=postgres://blog_admin:blog_pass@127.0.0.1:8432/r_blog_base_test
@@ -108,7 +101,6 @@ cargo check -p blog-server --bin blog-server
 cargo build -p blog-server
 	TEST_DATABASE_URL=$(TEST_DATABASE_URL) RUST_LOG=tonic=debug  cargo test -p blog-server --test grpc_integration -- --nocapture --test-threads=1
 ```
-
 ## Таблица конвертации ошибок в blog-server: DomainError -> gRPC Status
 | DomainError |gRPC Status | HTTP-аналог |
 |-|-|-|
@@ -118,7 +110,6 @@ cargo build -p blog-server
 |Forbidden | PermissionDenied | 403 Forbidden|
 |NotFound | NotFound | 404 Not Found |
 |Database, Jwt, Internal  |  Internal | 500 Internal Server Error |
-
 # blog-cli
 ```sh
 # Регистрация
@@ -133,25 +124,19 @@ cargo run -p blog-cli -- list
 cargo run -p blog-cli -- --grpc list
 ```
 ## Проверка gRPC через grpcurl
-
 ```sh
 # Установите grpcurl (если нет)
 go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
-
 # Проверить список сервисов
 grpcurl -plaintext localhost:50051 list
-
 # Вызов метода (без аутентификации)
 grpcurl -plaintext -d '{"limit": 5}' localhost:50051 blog.BlogService/ListPosts
-
 # Вызов с токеном
 grpcurl -plaintext \
   -H "authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{"title": "Hello", "content": "World"}' \
   localhost:50051 blog.BlogService/CreatePost
 ```
-
-
 # Запуск WASM-фронтенда
 Быстрый запуск:
 ```sh
@@ -168,7 +153,6 @@ python3 -m http.server 8000 --directory blog-wasm
 ```
 Откройте в браузере:
 http://localhost:8000
-
 # Синхронизация proto-схем
 При изменении blog.proto:
 ```sh 

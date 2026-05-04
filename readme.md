@@ -1,5 +1,21 @@
 # Модуль 3 (клиент-серверное blog)
 
+## Описание
+Используемые крейты:
+├── blog-server/ # Actix-web + SQLx + gRPC сервер
+├── blog-client/ # Библиотека клиента (HTTP + gRPC)
+├── blog-cli/ # CLI-интерфейс на базе blog-client
+└── blog-wasm/ # WASM-фронтенд (только HTTP)
+
+## Быстрый запуск
+```sh
+make mod3_reinit_db
+make mod3_blog_build_all_release
+```
+Релизная утилита `blog-cli` будет лежаить здесь:
+target/release/blog-cli
+
+Подготовка и запуск описаны в [расшериенном описание решения](blog-project/readme_blog_project.md)
 
 
 # Модуль 2 (клиент-серверное приложения `quote_server` и `quote_client`)
