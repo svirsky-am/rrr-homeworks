@@ -1,12 +1,8 @@
 // src/presentation/middleware.rs
-use actix_web::{
-    dev::ServiceRequest,
-    error::ErrorUnauthorized,
-    Error, HttpMessage, web,
-};
-use actix_web_httpauth::extractors::bearer::BearerAuth;
-use crate::infrastructure::JwtService;
 use crate::domain::DomainError;
+use crate::infrastructure::JwtService;
+use actix_web::{Error, HttpMessage, dev::ServiceRequest, error::ErrorUnauthorized, web};
+use actix_web_httpauth::extractors::bearer::BearerAuth;
 
 #[derive(Debug, Clone)]
 pub struct AuthenticatedUser {
@@ -18,7 +14,6 @@ pub async fn jwt_validator(
     req: ServiceRequest,
     credentials: BearerAuth,
 ) -> Result<ServiceRequest, (Error, ServiceRequest)> {
-    
     let jwt_service = match req.app_data::<web::Data<JwtService>>() {
         Some(service) => service,
         None => {
@@ -33,7 +28,7 @@ pub async fn jwt_validator(
         Ok(c) => c,
         Err(_) => {
             let err = ErrorUnauthorized("Invalid token");
-            return Err((err, req)); 
+            return Err((err, req));
         }
     };
 
@@ -47,7 +42,9 @@ pub async fn jwt_validator(
 }
 
 /// Helper для извлечения пользователя из запроса
-pub fn get_authenticated_user(req: &actix_web::HttpRequest) -> Result<AuthenticatedUser, DomainError> {
+pub fn get_authenticated_user(
+    req: &actix_web::HttpRequest,
+) -> Result<AuthenticatedUser, DomainError> {
     req.extensions()
         .get::<AuthenticatedUser>()
         .cloned()

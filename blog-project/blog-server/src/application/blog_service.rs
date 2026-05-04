@@ -1,6 +1,6 @@
 // use std::sync::Arc;
 use crate::data::PostRepository;
-use crate::domain::{Post, CreatePost, UpdatePost, DomainError, AppResult};
+use crate::domain::{AppResult, CreatePost, DomainError, Post, UpdatePost};
 
 #[derive(Clone)]
 pub struct BlogService {
@@ -20,7 +20,8 @@ impl BlogService {
     }
 
     pub async fn get_post(&self, id: i64) -> AppResult<Post> {
-        self.post_repo.find_by_id(id)
+        self.post_repo
+            .find_by_id(id)
             .await?
             .ok_or(DomainError::PostNotFound)
     }
@@ -30,7 +31,8 @@ impl BlogService {
     }
 
     pub async fn update_post(&self, id: i64, author_id: i64, input: UpdatePost) -> AppResult<Post> {
-        self.post_repo.update(id, author_id, input)
+        self.post_repo
+            .update(id, author_id, input)
             .await?
             .ok_or(DomainError::Forbidden)
     }

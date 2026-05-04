@@ -16,7 +16,8 @@ impl Default for ServerConfig {
             http_addr: "0.0.0.0:3000".into(),
             grpc_addr: "0.0.0.0:50051".into(),
             database_url: env::var("DATABASE_URL").expect("DATABASE_URL required"),
-            jwt_secret: env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-min-32-chars-change-in-prod".into()),
+            jwt_secret: env::var("JWT_SECRET")
+                .unwrap_or_else(|_| "dev-secret-min-32-chars-change-in-prod".into()),
             run_migrations: true,
         }
     }

@@ -71,14 +71,16 @@ fn parse_cli() -> Result<Cli, Box<dyn std::error::Error>> {
     let tickers_list: Result<Vec<String>, QuoteError> =
         match (tickers_filter_list, tickers_filter_file) {
             (filer_list, None) => {
-                let arg_str = filer_list.ok_or_else(|| QuoteError::MissingArgument("filer-list".to_string()))?;
+                let arg_str = filer_list
+                    .ok_or_else(|| QuoteError::MissingArgument("filer-list".to_string()))?;
                 Ok(arg_str
                     .split(',')
                     .map(|t| t.trim().to_uppercase())
                     .collect())
             }
             (None, filer_file) => {
-                let arg_str = filer_file.ok_or_else(|| QuoteError::MissingArgument("tickers-file".to_string()))?;
+                let arg_str = filer_file
+                    .ok_or_else(|| QuoteError::MissingArgument("tickers-file".to_string()))?;
                 let content = std::fs::read_to_string(Path::new(&arg_str))?;
                 Ok(content
                     .lines()
@@ -94,10 +96,11 @@ fn parse_cli() -> Result<Cli, Box<dyn std::error::Error>> {
         .get_one::<String>("target-quote-server")
         .ok_or_else(|| QuoteError::MissingArgument("target-quote-server".to_string()))?;
 
-    let target_quote_server: SocketAddr = server_str.clone()
+    let target_quote_server: SocketAddr = server_str
+        .clone()
         .parse()
         .map_err(|e| QuoteError::InvalidAddress(e))?;
-    
+
     Ok(Cli {
         target_quote_server,
         tickers_list: tickers_list?,
@@ -156,7 +159,8 @@ fn main() -> QuoteResult<()> {
     tcp_stream.write_all(stream_cmd.as_bytes())?;
     tcp_stream.flush()?;
 
-    let tcp_stream_clone = tcp_stream.try_clone()
+    let tcp_stream_clone = tcp_stream
+        .try_clone()
         .map_err(|e| QuoteError::SendError(e))?;
     let mut reader = std::io::BufReader::new(tcp_stream_clone);
     let mut response = String::new();
@@ -176,9 +180,10 @@ fn main() -> QuoteResult<()> {
     // Поток 2: PING keep-alive
     let ping_thread = thread::spawn({
         let socket = Arc::clone(&udp_socket);
-        let server_udp_addr: SocketAddr = format!("127.0.0.1:{}", cli.target_quote_server.port() - 1)
-            .parse()
-            .unwrap_or_else(|_| "127.0.0.1:8000".parse().unwrap());
+        let server_udp_addr: SocketAddr =
+            format!("127.0.0.1:{}", cli.target_quote_server.port() - 1)
+                .parse()
+                .unwrap_or_else(|_| "127.0.0.1:8000".parse().unwrap());
         move || {
             run_ping_sender(socket, server_udp_addr);
         }

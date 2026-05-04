@@ -1,19 +1,18 @@
-// blog-cli/src/main.rs
-use clap::{Parser, Subcommand};
-use blog_client::BlogClient;
-use std::path::PathBuf;
 use anyhow::Result;
+use blog_client::BlogClient;
+use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "blog-cli")]
 #[command(about = "CLI клиент для блога")]
 struct Cli {
-    #[arg(long, short = 'g', help="Использовать gRPC вместо HTTP")]
+    #[arg(long, short = 'g', help = "Использовать gRPC вместо HTTP")]
     grpc: bool,
-    
-    #[arg(long, short = 's', help="Адрес сервера")]
+
+    #[arg(long, short = 's', help = "Адрес сервера")]
     server: Option<String>,
-    
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -21,32 +20,46 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Register {
-        #[arg(long, short)] username: String,
-        #[arg(long, short)] email: String,
-        #[arg(long, short)] password: String,
+        #[arg(long, short)]
+        username: String,
+        #[arg(long, short)]
+        email: String,
+        #[arg(long, short)]
+        password: String,
     },
     Login {
-        #[arg(long, short)] username: String,
-        #[arg(long, short)] password: String,
+        #[arg(long, short)]
+        username: String,
+        #[arg(long, short)]
+        password: String,
     },
     Create {
-        #[arg(long, short)] title: String,
-        #[arg(long, short)] content: String,
+        #[arg(long, short)]
+        title: String,
+        #[arg(long, short)]
+        content: String,
     },
     Get {
-        #[arg(long, short)] id: i64,
+        #[arg(long, short)]
+        id: i64,
     },
     Update {
-        #[arg(long, short)] id: i64,
-        #[arg(long, short)] title: Option<String>,
-        #[arg(long, short)] content: Option<String>,
+        #[arg(long, short)]
+        id: i64,
+        #[arg(long, short)]
+        title: Option<String>,
+        #[arg(long, short)]
+        content: Option<String>,
     },
     Delete {
-        #[arg(long, short)] id: i64,
+        #[arg(long, short)]
+        id: i64,
     },
     List {
-        #[arg(long, short, default_value = "10")] limit: i64,
-        #[arg(long, short, default_value = "0")] offset: i64,
+        #[arg(long, short, default_value = "10")]
+        limit: i64,
+        #[arg(long, short, default_value = "0")]
+        offset: i64,
     },
 }
 
@@ -69,35 +82,48 @@ fn save_token(token: &str) -> Result<()> {
 async fn main() -> Result<()> {
     dotenvy::dotenv().ok();
     let cli = Cli::parse();
-    
+
     // Определяем адрес по умолчанию
     let addr = cli.server.unwrap_or_else(|| {
-        if cli.grpc { "http://127.0.0.1:50051".into() } 
-        else { "http://127.0.0.1:3000".into() }
+        if cli.grpc {
+            "http://127.0.0.1:50051".into()
+        } else {
+            "http://127.0.0.1:3000".into()
+        }
     });
-    
+
     // Создаём клиент через новые конструкторы
     let mut client = if cli.grpc {
         BlogClient::new_grpc(addr).await?
     } else {
         BlogClient::new_http(addr).await?
     };
-    
+
     // Загружаем сохранённый токен
     if let Some(token) = load_token() {
         client.set_token(token);
     }
-    
+
     match cli.command {
-        Commands::Register { username, email, password } => {
+        Commands::Register {
+            username,
+            email,
+            password,
+        } => {
             let resp = client.register(&username, &email, &password).await?;
             save_token(&resp.token)?;
-            println!("Registered as {} (ID: {})", resp.user.username, resp.user.id);
+            println!(
+                "Registered as {} (ID: {})",
+                resp.user.username, resp.user.id
+            );
         }
         Commands::Login { username, password } => {
             let resp = client.login(&username, &password).await?;
             save_token(&resp.token)?;
-            println!(" Logged in as {} (ID: {})", resp.user.username, resp.user.id);
+            println!(
+                " Logged in as {} (ID: {})",
+                resp.user.username, resp.user.id
+            );
         }
         Commands::Create { title, content } => {
             let post = client.create_post(&title, &content).await?;
@@ -111,7 +137,9 @@ async fn main() -> Result<()> {
             println!("🕐 Created: {}", post.created_at);
         }
         Commands::Update { id, title, content } => {
-            let post = client.update_post(id, title.as_deref(), content.as_deref()).await?;
+            let post = client
+                .update_post(id, title.as_deref(), content.as_deref())
+                .await?;
             println!("Post #{} updated", post.id);
         }
         Commands::Delete { id } => {
@@ -120,12 +148,17 @@ async fn main() -> Result<()> {
         }
         Commands::List { limit, offset } => {
             let list = client.list_posts(Some(limit), Some(offset)).await?;
-            println!("\n📋 Posts (showing {}-{} of {}):", offset, offset + list.posts.len() as i64, list.total);
+            println!(
+                "\n📋 Posts (showing {}-{} of {}):",
+                offset,
+                offset + list.posts.len() as i64,
+                list.total
+            );
             for post in &list.posts {
                 println!("  #{} - {} (by #{})", post.id, post.title, post.author_id);
             }
         }
     }
-    
+
     Ok(())
 }
