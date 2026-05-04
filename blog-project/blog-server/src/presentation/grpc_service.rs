@@ -1,23 +1,20 @@
 // src/presentation/grpc_service.rs
-use tonic::{Request, Response, Status};
 use std::sync::Arc;
+use tonic::{Request, Response, Status};
 
 use crate::blog::blog_service_server::BlogService as GrpcBlogService;
 use crate::blog::{
-    RegisterRequest, LoginRequest, AuthResponse, PostId, Post as GrpcPost, 
-    PostResponse, CreatePostRequest, UpdatePostRequest, ListPostsRequest, 
-    ListPostsResponse, DeleteResponse, User as GrpcUser,
+    AuthResponse, CreatePostRequest, DeleteResponse, ListPostsRequest, ListPostsResponse,
+    LoginRequest, Post as GrpcPost, PostId, PostResponse, RegisterRequest, UpdatePostRequest,
+    User as GrpcUser,
 };
 
 use crate::application::{AuthService, BlogService};
-use crate::infrastructure::JwtService;
 use crate::domain::{
-    RegisterRequest as DomainRegister, 
-    LoginRequest as DomainLogin, 
-    CreatePost as DomainCreatePost, 
-    UpdatePost as DomainUpdatePost,
-    UserPublic,
+    CreatePost as DomainCreatePost, LoginRequest as DomainLogin, RegisterRequest as DomainRegister,
+    UpdatePost as DomainUpdatePost, UserPublic,
 };
+use crate::infrastructure::JwtService;
 
 #[derive(Clone)]
 pub struct BlogGrpcService {
@@ -28,15 +25,20 @@ pub struct BlogGrpcService {
 
 impl BlogGrpcService {
     pub fn new(
-        auth_service: Arc<AuthService>, 
-        blog_service: Arc<BlogService>, 
-        jwt_service: JwtService
+        auth_service: Arc<AuthService>,
+        blog_service: Arc<BlogService>,
+        jwt_service: JwtService,
     ) -> Self {
-        Self { auth_service, blog_service, jwt_service }
+        Self {
+            auth_service,
+            blog_service,
+            jwt_service,
+        }
     }
 
     fn extract_token(&self, metadata: &tonic::metadata::MetadataMap) -> Result<String, Status> {
-        metadata.get("authorization")
+        metadata
+            .get("authorization")
             .and_then(|v| v.to_str().ok())
             .and_then(|s| s.strip_prefix("Bearer "))
             .map(String::from)
@@ -44,7 +46,9 @@ impl BlogGrpcService {
     }
 
     fn verify_grpc_token(&self, token: &str) -> Result<(i64, String), Status> {
-        let claims = self.jwt_service.verify_token(token)
+        let claims = self
+            .jwt_service
+            .verify_token(token)
             .map_err(|_| Status::unauthenticated("Invalid token"))?;
         Ok((claims.user_id, claims.username))
     }
@@ -92,10 +96,11 @@ impl GrpcBlogService for BlogGrpcService {
                 }))
             }
             Err(crate::domain::DomainError::Validation(msg)) => {
-                Err(Status::invalid_argument(msg))  // 400 InvalidArgument
+                Err(Status::invalid_argument(msg)) // 400 InvalidArgument
             }
-            Err(crate::domain::DomainError::UserAlreadyExists) => 
-                Err(Status::already_exists("User already exists")),
+            Err(crate::domain::DomainError::UserAlreadyExists) => {
+                Err(Status::already_exists("User already exists"))
+            }
             Err(e) => Err(Status::internal(e.to_string())),
         }
     }
@@ -119,9 +124,7 @@ impl GrpcBlogService for BlogGrpcService {
                 }))
             }
             // Валидация -> InvalidArgument
-            Err(crate::domain::DomainError::Validation(msg)) => {
-                Err(Status::invalid_argument(msg))
-            }
+            Err(crate::domain::DomainError::Validation(msg)) => Err(Status::invalid_argument(msg)),
             // Неверные креды -> Unauthenticated
             Err(crate::domain::DomainError::InvalidCredentials) => {
                 Err(Status::unauthenticated("Invalid credentials"))
@@ -130,18 +133,16 @@ impl GrpcBlogService for BlogGrpcService {
         }
     }
 
-    async fn get_post(
-        &self,
-        request: Request<PostId>,
-    ) -> Result<Response<PostResponse>, Status> {
+    async fn get_post(&self, request: Request<PostId>) -> Result<Response<PostResponse>, Status> {
         let id = request.into_inner().id;
-        
+
         match self.blog_service.get_post(id).await {
             Ok(post) => Ok(Response::new(PostResponse {
                 post: Some(self.domain_to_grpc_post(post)),
             })),
-            Err(crate::domain::DomainError::PostNotFound) => 
-                Err(Status::not_found("Post not found")),
+            Err(crate::domain::DomainError::PostNotFound) => {
+                Err(Status::not_found("Post not found"))
+            }
             Err(e) => Err(Status::internal(e.to_string())),
         }
     }
@@ -156,7 +157,8 @@ impl GrpcBlogService for BlogGrpcService {
 
         match self.blog_service.list_posts(limit, offset).await {
             Ok((posts, total)) => {
-                let grpc_posts = posts.into_iter()
+                let grpc_posts = posts
+                    .into_iter()
                     .map(|p| self.domain_to_grpc_post(p))
                     .collect();
                 Ok(Response::new(ListPostsResponse {
@@ -188,9 +190,7 @@ impl GrpcBlogService for BlogGrpcService {
             Ok(post) => Ok(Response::new(PostResponse {
                 post: Some(self.domain_to_grpc_post(post)),
             })),
-            Err(crate::domain::DomainError::Validation(msg)) => {
-                Err(Status::invalid_argument(msg))
-            }
+            Err(crate::domain::DomainError::Validation(msg)) => Err(Status::invalid_argument(msg)),
             Err(e) => Err(Status::invalid_argument(e.to_string())),
         }
     }
@@ -209,14 +209,20 @@ impl GrpcBlogService for BlogGrpcService {
             content: req.content.filter(|s| !s.is_empty()),
         };
 
-        match self.blog_service.update_post(req.id, user_id, domain_req).await {
+        match self
+            .blog_service
+            .update_post(req.id, user_id, domain_req)
+            .await
+        {
             Ok(post) => Ok(Response::new(PostResponse {
                 post: Some(self.domain_to_grpc_post(post)),
             })),
-            Err(crate::domain::DomainError::PostNotFound) => 
-                Err(Status::not_found("Post not found")),
-            Err(crate::domain::DomainError::Forbidden) => 
-                Err(Status::permission_denied("Not the author")),
+            Err(crate::domain::DomainError::PostNotFound) => {
+                Err(Status::not_found("Post not found"))
+            }
+            Err(crate::domain::DomainError::Forbidden) => {
+                Err(Status::permission_denied("Not the author"))
+            }
             Err(e) => Err(Status::invalid_argument(e.to_string())),
         }
     }
@@ -233,10 +239,12 @@ impl GrpcBlogService for BlogGrpcService {
 
         match self.blog_service.delete_post(id, user_id).await {
             Ok(_) => Ok(Response::new(DeleteResponse { success: true })),
-            Err(crate::domain::DomainError::PostNotFound) => 
-                Err(Status::not_found("Post not found")),
-            Err(crate::domain::DomainError::Forbidden) => 
-                Err(Status::permission_denied("Not the author")),
+            Err(crate::domain::DomainError::PostNotFound) => {
+                Err(Status::not_found("Post not found"))
+            }
+            Err(crate::domain::DomainError::Forbidden) => {
+                Err(Status::permission_denied("Not the author"))
+            }
             Err(e) => Err(Status::internal(e.to_string())),
         }
     }

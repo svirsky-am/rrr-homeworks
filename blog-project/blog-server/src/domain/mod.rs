@@ -1,7 +1,7 @@
+pub mod error;
 pub mod post;
 pub mod user;
-pub mod error;
 
-pub use post::{Post, CreatePost, UpdatePost};
-pub use user::{User, RegisterRequest, LoginRequest, UserPublic};
-pub use error::{DomainError, AppResult};
+pub use error::{AppResult, DomainError};
+pub use post::{CreatePost, Post, UpdatePost};
+pub use user::{LoginRequest, RegisterRequest, User, UserPublic};

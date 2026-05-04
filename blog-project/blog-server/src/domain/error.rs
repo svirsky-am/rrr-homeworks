@@ -1,6 +1,6 @@
-use thiserror::Error;
 use actix_web::{HttpResponse, ResponseError, http::StatusCode};
 use serde::Serialize;
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum DomainError {
@@ -39,7 +39,9 @@ impl ResponseError for DomainError {
             DomainError::UserAlreadyExists => StatusCode::CONFLICT,
             DomainError::InvalidCredentials | DomainError::Forbidden => StatusCode::UNAUTHORIZED,
             DomainError::Validation(_) => StatusCode::BAD_REQUEST,
-            DomainError::Database(_) | DomainError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            DomainError::Database(_) | DomainError::Internal(_) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -57,7 +59,8 @@ impl ResponseError for DomainError {
                 DomainError::Jwt(_) => "jwt_error",
                 DomainError::Hash(_) => "hash_error",
                 DomainError::Internal(_) => "internal_error",
-            }.to_string(),
+            }
+            .to_string(),
             message: self.to_string(),
         })
     }

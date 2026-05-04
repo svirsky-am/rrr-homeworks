@@ -21,9 +21,9 @@
 //! ### Start server
 //! ```sh
 //! ./quote_server 8000 8001
-//! ``` 
+//! ```
 //! ### Start client
-//! With qoutes filter as string list: 
+//! With qoutes filter as string list:
 //! ```sh
 //!  ./quote_client --target-quote-server 127.0.0.1:8001 --filer-lint AAPL,TSLA
 //! ```
@@ -96,12 +96,11 @@ pub fn is_supported_ticker(ticker: &str) -> bool {
     SUPPORTED_TICKERS.contains(&ticker)
 }
 
-
-fn get_cur_timestamp () -> u64 {
+fn get_cur_timestamp() -> u64 {
     SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0)
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
 }
 
 /// Batch of quotes generated at the same time for all tickers.

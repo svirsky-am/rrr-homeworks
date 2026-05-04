@@ -1,11 +1,15 @@
+use crate::domain::{AppResult, CreatePost, DomainError, Post, UpdatePost};
 use sqlx::PgPool;
-use crate::domain::{Post, CreatePost, UpdatePost, DomainError, AppResult};
 
 #[derive(Clone)]
-pub struct PostRepository { pool: PgPool }
+pub struct PostRepository {
+    pool: PgPool,
+}
 
 impl PostRepository {
-    pub fn new(pool: PgPool) -> Self { Self { pool } }
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
 
     pub async fn create(&self, author_id: i64, input: CreatePost) -> AppResult<Post> {
         Ok(sqlx::query_as!(
@@ -56,11 +60,17 @@ impl PostRepository {
         Ok((posts, total))
     }
 
-    pub async fn update(&self, id: i64, author_id: i64, input: UpdatePost) -> AppResult<Option<Post>> {
+    pub async fn update(
+        &self,
+        id: i64,
+        author_id: i64,
+        input: UpdatePost,
+    ) -> AppResult<Option<Post>> {
         // Проверяем, что пользователь — автор
         let exists = sqlx::query_scalar!(
             r#"SELECT EXISTS(SELECT 1 FROM posts WHERE id = $1 AND author_id = $2)"#,
-            id, author_id
+            id,
+            author_id
         )
         .fetch_one(&self.pool)
         .await?
@@ -93,11 +103,12 @@ impl PostRepository {
     pub async fn delete(&self, id: i64, author_id: i64) -> AppResult<bool> {
         let result = sqlx::query!(
             r#"DELETE FROM posts WHERE id = $1 AND author_id = $2"#,
-            id, author_id
+            id,
+            author_id
         )
         .execute(&self.pool)
         .await?;
-        
+
         Ok(result.rows_affected() > 0)
     }
 }

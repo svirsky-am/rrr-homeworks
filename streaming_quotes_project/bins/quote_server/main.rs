@@ -255,7 +255,6 @@ fn handle_client_subscription(
     clients: Arc<Mutex<HashMap<SocketAddr, ClientSession>>>,
     broadcaster: Arc<QuoteBroadcaster>,
 ) -> QuoteResult<()> {
-
     let tcp_stream_clone = match tcp_stream.try_clone() {
         Ok(stream) => stream,
         Err(e) => {
@@ -265,7 +264,7 @@ fn handle_client_subscription(
             return Ok(());
         }
     };
-    
+
     let mut reader = std::io::BufReader::new(tcp_stream_clone);
     let mut command = String::new();
 

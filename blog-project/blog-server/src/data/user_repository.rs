@@ -1,17 +1,20 @@
-use sqlx::PgPool;
-use crate::domain::{User, RegisterRequest, DomainError, AppResult};
-use argon2::{password_hash::SaltString, Argon2, PasswordHasher, PasswordVerifier};
+use crate::domain::{AppResult, DomainError, RegisterRequest, User};
+use argon2::{Argon2, PasswordHasher, PasswordVerifier, password_hash::SaltString};
 use rand::rngs::OsRng;
+use sqlx::PgPool;
 
 /// Хешируем пароль через Argon2
 #[derive(Clone)]
-pub struct UserRepository { pool: PgPool }
+pub struct UserRepository {
+    pool: PgPool,
+}
 
 impl UserRepository {
-    pub fn new(pool: PgPool) -> Self { Self { pool } }
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
 
     pub async fn create(&self, req: RegisterRequest) -> AppResult<User> {
-        
         let salt = SaltString::generate(&mut OsRng);
         let password_hash = Argon2::default()
             .hash_password(req.password.as_bytes(), &salt)
@@ -32,8 +35,9 @@ impl UserRepository {
         .fetch_one(&self.pool)
         .await
         .map_err(|e| match e {
-            sqlx::Error::Database(db_err) if db_err.is_unique_violation() => 
-                DomainError::UserAlreadyExists,
+            sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+                DomainError::UserAlreadyExists
+            }
             _ => DomainError::Database(e),
         })?;
 
@@ -61,9 +65,9 @@ impl UserRepository {
     }
 
     pub fn verify_password(&self, password: &str, hash: &str) -> AppResult<bool> {
-        let parsed_hash = argon2::PasswordHash::new(hash)
-            .map_err(|e| DomainError::Hash(e.to_string()))?;
-        
+        let parsed_hash =
+            argon2::PasswordHash::new(hash).map_err(|e| DomainError::Hash(e.to_string()))?;
+
         Ok(Argon2::default()
             .verify_password(password.as_bytes(), &parsed_hash)
             .is_ok())

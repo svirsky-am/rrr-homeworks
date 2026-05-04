@@ -107,11 +107,23 @@ mod3_blog_cli_build: mod3_blog_client_build
 PHONY: mod3_blog_wasm_build
 mod3_blog_wasm_build:
 	bash -C blog-project/blog-wasm/pack_and_run_ui.sh
-	
+
+
+PHONY: mod3_blog_build_all_debug
+mod3_blog_build_all_debug:
+	cargo build -p blog-server
+	cargo build -p blog-client
+	cargo build -p blog-cli
+	bash -C blog-project/blog-wasm/pack_and_run_ui.sh
 
 PHONY: mod3_blog_build_all_release
-mod3_blog_build_all:
+mod3_blog_build_all_release:
 	cargo build -p blog-server --release
 	cargo build -p blog-client --release
 	cargo build -p blog-cli --release
-	bash -C blog-project/blog-wasm/pack_and_run_ui.sh
+	bash -C blog-project/blog-wasm/pack_ui.sh
+
+
+PHONY: mod3_run_release
+mod3_run_release:
+	target/release/blog-server

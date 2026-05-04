@@ -1,21 +1,26 @@
-use actix_web::{web, HttpResponse, get, post, put, delete};
 use crate::application::{AuthService, BlogService};
-use crate::domain::{RegisterRequest, LoginRequest, CreatePost, UpdatePost};
-use crate::presentation::middleware::{get_authenticated_user, AuthenticatedUser};
-
+use crate::domain::{CreatePost, LoginRequest, RegisterRequest, UpdatePost};
+use crate::presentation::middleware::{AuthenticatedUser, get_authenticated_user};
+use actix_web::{HttpResponse, delete, get, post, put, web};
 
 fn validate_registration(req: &RegisterRequest) -> Result<(), actix_web::Error> {
     if req.username.trim().is_empty() {
-        return Err(actix_web::error::ErrorBadRequest("Username cannot be empty"));
+        return Err(actix_web::error::ErrorBadRequest(
+            "Username cannot be empty",
+        ));
     }
     if req.username.len() < 3 || req.username.len() > 50 {
-        return Err(actix_web::error::ErrorBadRequest("Username must be 3-50 characters"));
+        return Err(actix_web::error::ErrorBadRequest(
+            "Username must be 3-50 characters",
+        ));
     }
     if !req.email.contains('@') || !req.email.contains('.') {
         return Err(actix_web::error::ErrorBadRequest("Invalid email format"));
     }
     if req.password.len() < 6 {
-        return Err(actix_web::error::ErrorBadRequest("Password must be at least 6 characters"));
+        return Err(actix_web::error::ErrorBadRequest(
+            "Password must be at least 6 characters",
+        ));
     }
     Ok(())
 }
@@ -25,12 +30,13 @@ pub async fn register(
     service: web::Data<AuthService>,
     body: web::Json<RegisterRequest>,
 ) -> Result<HttpResponse, actix_web::Error> {
-
     let req = body.into_inner();
-    validate_registration(&req)?;  
-    let (token, user) = service.register(req).await
+    validate_registration(&req)?;
+    let (token, user) = service
+        .register(req)
+        .await
         .map_err(actix_web::error::ErrorInternalServerError)?;
-    
+
     // req.validate()
     //     .map_err(|e| {
     //         let msg = e.errors().values()
@@ -54,13 +60,13 @@ pub async fn login(
 ) -> Result<HttpResponse, actix_web::Error> {
     let req = body.into_inner();
     // validate_registration(&req)?;
-    let (token, user) = service.login(req).await
-        .map_err(|e| match e {
-            crate::domain::DomainError::InvalidCredentials => 
-                actix_web::error::ErrorUnauthorized("Invalid credentials"),
-            _ => actix_web::error::ErrorInternalServerError(e),
-        })?;
-    
+    let (token, user) = service.login(req).await.map_err(|e| match e {
+        crate::domain::DomainError::InvalidCredentials => {
+            actix_web::error::ErrorUnauthorized("Invalid credentials")
+        }
+        _ => actix_web::error::ErrorInternalServerError(e),
+    })?;
+
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "token": token,
         "user": user
@@ -72,13 +78,16 @@ pub async fn get_post(
     service: web::Data<BlogService>,
     path: web::Path<i64>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let post = service.get_post(path.into_inner()).await
+    let post = service
+        .get_post(path.into_inner())
+        .await
         .map_err(|e| match e {
-            crate::domain::DomainError::PostNotFound => 
-                actix_web::error::ErrorNotFound("Post not found"),
+            crate::domain::DomainError::PostNotFound => {
+                actix_web::error::ErrorNotFound("Post not found")
+            }
             _ => actix_web::error::ErrorInternalServerError(e),
         })?;
-    
+
     Ok(HttpResponse::Ok().json(post))
 }
 
@@ -94,10 +103,12 @@ pub async fn list_posts(
 ) -> Result<HttpResponse, actix_web::Error> {
     let limit = query.limit.unwrap_or(10).min(100);
     let offset = query.offset.unwrap_or(0);
-    
-    let (posts, total) = service.list_posts(limit, offset).await
+
+    let (posts, total) = service
+        .list_posts(limit, offset)
+        .await
         .map_err(actix_web::error::ErrorInternalServerError)?;
-    
+
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "posts": posts,
         "total": total,
@@ -112,15 +123,15 @@ pub async fn create_post(
     req: actix_web::HttpRequest,
     body: web::Json<CreatePost>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    
     let body_req = body.into_inner();
     // validate_registration(&body_req)?;
-    let auth_user = get_authenticated_user(&req)
-        .map_err(actix_web::error::ErrorUnauthorized)?;
-    
-    let post = service.create_post(auth_user.user_id, body_req).await
+    let auth_user = get_authenticated_user(&req).map_err(actix_web::error::ErrorUnauthorized)?;
+
+    let post = service
+        .create_post(auth_user.user_id, body_req)
+        .await
         .map_err(actix_web::error::ErrorInternalServerError)?;
-    
+
     Ok(HttpResponse::Created().json(post))
 }
 
@@ -131,21 +142,23 @@ pub async fn update_post(
     path: web::Path<i64>,
     body: web::Json<UpdatePost>,
 ) -> Result<HttpResponse, actix_web::Error> {
-   
     let body_req = body.into_inner();
     // validate_registration(&body_req)?;
-    let auth_user = get_authenticated_user(&req)
-        .map_err(actix_web::error::ErrorUnauthorized)?;
-    
-    let post = service.update_post(path.into_inner(), auth_user.user_id, body_req).await
+    let auth_user = get_authenticated_user(&req).map_err(actix_web::error::ErrorUnauthorized)?;
+
+    let post = service
+        .update_post(path.into_inner(), auth_user.user_id, body_req)
+        .await
         .map_err(|e| match e {
-            crate::domain::DomainError::PostNotFound => 
-                actix_web::error::ErrorNotFound("Post not found"),
-            crate::domain::DomainError::Forbidden => 
-                actix_web::error::ErrorForbidden("Not the author"),
+            crate::domain::DomainError::PostNotFound => {
+                actix_web::error::ErrorNotFound("Post not found")
+            }
+            crate::domain::DomainError::Forbidden => {
+                actix_web::error::ErrorForbidden("Not the author")
+            }
             _ => actix_web::error::ErrorInternalServerError(e),
         })?;
-    
+
     Ok(HttpResponse::Ok().json(post))
 }
 
@@ -155,18 +168,21 @@ pub async fn delete_post(
     req: actix_web::HttpRequest,
     path: web::Path<i64>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let auth_user = get_authenticated_user(&req)
-        .map_err(actix_web::error::ErrorUnauthorized)?;
-    
-    service.delete_post(path.into_inner(), auth_user.user_id).await
+    let auth_user = get_authenticated_user(&req).map_err(actix_web::error::ErrorUnauthorized)?;
+
+    service
+        .delete_post(path.into_inner(), auth_user.user_id)
+        .await
         .map_err(|e| match e {
-            crate::domain::DomainError::PostNotFound => 
-                actix_web::error::ErrorNotFound("Post not found"),
-            crate::domain::DomainError::Forbidden => 
-                actix_web::error::ErrorForbidden("Not the author"),
+            crate::domain::DomainError::PostNotFound => {
+                actix_web::error::ErrorNotFound("Post not found")
+            }
+            crate::domain::DomainError::Forbidden => {
+                actix_web::error::ErrorForbidden("Not the author")
+            }
             _ => actix_web::error::ErrorInternalServerError(e),
         })?;
-    
+
     Ok(HttpResponse::NoContent().finish())
 }
 
