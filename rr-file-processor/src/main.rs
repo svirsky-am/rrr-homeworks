@@ -82,7 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     dbg!(&cli.input);
     dbg!(&cli.input);
 
-    match &cli.input == dash_string {
+    match cli.input == dash_string {
         true => {
             dbg!("try to read from sdtio");
             std::io::copy(&mut reader_from_sdtdio, &mut converter)?
@@ -104,9 +104,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::create_dir_all(parent_dir).unwrap();
     dbg!(&cli.output);
 
-    let output_is_std_out = &cli.output == dash_string;
+    let output_is_std_out = cli.output == dash_string;
 
-    match &cli.output == dash_string {
+    match cli.output == dash_string {
         true => {
             dbg!(output_is_std_out);
             std::io::copy(&mut converter, &mut output_writer_stdout)?

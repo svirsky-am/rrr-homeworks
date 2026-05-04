@@ -1,6 +1,6 @@
 use crate::application::{AuthService, BlogService};
 use crate::domain::{CreatePost, LoginRequest, RegisterRequest, UpdatePost};
-use crate::presentation::middleware::{AuthenticatedUser, get_authenticated_user};
+use crate::presentation::middleware::get_authenticated_user;
 use actix_web::{HttpResponse, delete, get, post, put, web};
 
 fn validate_registration(req: &RegisterRequest) -> Result<(), actix_web::Error> {

@@ -1,7 +1,6 @@
 use gloo_net::http::Request;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::spawn_local;
 use web_sys::{window, Storage};
 
 // === Модели (дублируем из blog-client для независимости) ===

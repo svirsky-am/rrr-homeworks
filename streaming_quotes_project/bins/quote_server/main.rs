@@ -185,13 +185,12 @@ fn run_ping_listener(
                 if msg == "PING" {
                     debug!("UDP_PING from {}", addr);
 
-                    if let Ok(mut clients_guard) = clients.lock() {
-                        if let Some(session) = clients_guard.get_mut(&addr) {
+                    if let Ok(mut clients_guard) = clients.lock()
+                        && let Some(session) = clients_guard.get_mut(&addr) {
                             session.last_activity = Instant::now();
                             let _ = udp_socket.send_to(b"PONG", addr);
                             debug!("UDP_PONG to {}", addr);
                         }
-                    }
                 }
             }
             Err(e) => error!("UDP_RECV_ERROR: {}", e),
@@ -438,12 +437,11 @@ fn run_timeout_monitor(clients: Arc<Mutex<HashMap<SocketAddr, ClientSession>>>) 
         }
 
         for addr in to_remove {
-            if let Ok(mut clients_guard) = clients.lock() {
-                if let Some(session) = clients_guard.remove(&addr) {
+            if let Ok(mut clients_guard) = clients.lock()
+                && let Some(session) = clients_guard.remove(&addr) {
                     session.stop_flag.store(true, Ordering::Relaxed);
                     info!("CLIENT_REMOVED addr={}", addr);
                 }
-            }
         }
     }
 }

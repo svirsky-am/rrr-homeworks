@@ -181,6 +181,12 @@ impl VolumeCategory {
     }
 }
 
+impl Default for QuoteGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl QuoteGenerator {
     pub fn new() -> Self {
         // Базовые цены для тикеров (условные)

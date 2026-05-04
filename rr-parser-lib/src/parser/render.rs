@@ -345,7 +345,7 @@ pub fn render_content_as_camt053(
                         "Cd",
                         tr_direction,
                     )?;
-                    let _ = _prtry_tag.close()?;
+                    _prtry_tag.close()?;
 
                     transaction_count += 1;
                     ntry_tag.close()?;
@@ -373,7 +373,6 @@ pub fn render_content_as_mt940(
     for cash_statement_data in &input_vec {
         let _date_of_statemant = cash_statement_data
             .creation_time
-            .clone()
             .expect("Can't get datetime of Balance.");
         let account_id = &cash_statement_data.id;
         let bank_maintainer = &cash_statement_data.bank_maintainer;
@@ -486,7 +485,6 @@ pub fn render_content_as_csv_extra_fin(
     for cash_statement_data in &input_vec {
         let datetime_of_statemant = cash_statement_data
             .creation_time
-            .clone()
             .expect("Can't get datetime of Balance.");
         let creation_date = &datetime_of_statemant.format("%d.%m.%Y").to_string();
         let creation_datetime = &datetime_of_statemant

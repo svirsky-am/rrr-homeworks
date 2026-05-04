@@ -15,7 +15,6 @@
 use clap::{Arg, ArgGroup, Command};
 use core::clone::Clone;
 use core::option::Option::{None, Some};
-use std::env;
 use std::io::{BufRead, Write};
 use std::net::{SocketAddr, TcpStream, UdpSocket};
 use std::path::Path;
@@ -99,7 +98,7 @@ fn parse_cli() -> Result<Cli, Box<dyn std::error::Error>> {
     let target_quote_server: SocketAddr = server_str
         .clone()
         .parse()
-        .map_err(|e| QuoteError::InvalidAddress(e))?;
+        .map_err(QuoteError::InvalidAddress)?;
 
     Ok(Cli {
         target_quote_server,
@@ -128,7 +127,7 @@ fn main() -> QuoteResult<()> {
 
     let client_udp_bind: SocketAddr = "127.0.0.1:0"
         .parse::<SocketAddr>()
-        .map_err(|e| QuoteError::InvalidAddress(e))?;
+        .map_err(QuoteError::InvalidAddress)?;
 
     let udp_socket = UdpSocket::bind(client_udp_bind).map_err(|e| QuoteError::BindError {
         addr: client_udp_bind.to_string(),
@@ -161,7 +160,7 @@ fn main() -> QuoteResult<()> {
 
     let tcp_stream_clone = tcp_stream
         .try_clone()
-        .map_err(|e| QuoteError::SendError(e))?;
+        .map_err(QuoteError::SendError)?;
     let mut reader = std::io::BufReader::new(tcp_stream_clone);
     let mut response = String::new();
     reader.read_line(&mut response)?;

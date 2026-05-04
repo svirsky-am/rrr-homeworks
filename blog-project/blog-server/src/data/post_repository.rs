@@ -1,4 +1,4 @@
-use crate::domain::{AppResult, CreatePost, DomainError, Post, UpdatePost};
+use crate::domain::{AppResult, CreatePost, Post, UpdatePost};
 use sqlx::PgPool;
 
 #[derive(Clone)]

@@ -71,7 +71,7 @@ pub async fn run_server(config: ServerConfig) -> Result<StartedServer, std::io::
     if config.run_migrations {
         infrastructure::run_migrations(&pool)
             .await
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            .map_err(|e| std::io::Error::other(e))?;
     }
 
     let (auth_data, blog_data, jwt_data, grpc_auth_service, grpc_blog_service) =
@@ -147,7 +147,7 @@ pub async fn run_server(config: ServerConfig) -> Result<StartedServer, std::io::
             }
             result = grpc_server => {
                 tracing::error!("gRPC server failed: {:?}", result);
-                result.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+                result.map_err(|e| std::io::Error::other(e))
             }
         }
     });
