@@ -7,7 +7,6 @@
 // /// // Or just a custom message
 // /// return Err(ParseError::from("Failed to match header regex"));
 
-use chrono::{NaiveDate, NaiveDateTime};
 use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum ParseError {

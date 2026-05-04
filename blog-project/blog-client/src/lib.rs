@@ -99,7 +99,7 @@ impl BlogClient {
             }
             TransportClient::Grpc(arc) => {
                 let mut guard = arc.lock().await;
-                grpc_client::register(&mut *guard, username, email, password).await?
+                grpc_client::register(&mut guard, username, email, password).await?
             }
         };
         self.token = Some(resp.token.clone());
@@ -116,7 +116,7 @@ impl BlogClient {
             TransportClient::Http(c, url) => http_client::login(c, url, username, password).await?,
             TransportClient::Grpc(arc) => {
                 let mut guard = arc.lock().await;
-                grpc_client::login(&mut *guard, username, password).await?
+                grpc_client::login(&mut guard, username, password).await?
             }
         };
         self.token = Some(resp.token.clone());
@@ -135,7 +135,7 @@ impl BlogClient {
             }
             TransportClient::Grpc(arc) => {
                 let mut guard = arc.lock().await;
-                grpc_client::create_post(&mut *guard, token, title, content).await
+                grpc_client::create_post(&mut guard, token, title, content).await
             }
         }
     }
@@ -146,7 +146,7 @@ impl BlogClient {
             TransportClient::Http(c, url) => http_client::get_post(c, url, id).await,
             TransportClient::Grpc(arc) => {
                 let mut guard = arc.lock().await;
-                grpc_client::get_post(&mut *guard, id).await
+                grpc_client::get_post(&mut guard, id).await
             }
         }
     }
@@ -168,7 +168,7 @@ impl BlogClient {
             }
             TransportClient::Grpc(arc) => {
                 let mut guard = arc.lock().await;
-                grpc_client::update_post(&mut *guard, token, id, title, content).await
+                grpc_client::update_post(&mut guard, token, id, title, content).await
             }
         }
     }
@@ -183,7 +183,7 @@ impl BlogClient {
             TransportClient::Http(c, url) => http_client::delete_post(c, url, token, id).await,
             TransportClient::Grpc(arc) => {
                 let mut guard = arc.lock().await;
-                grpc_client::delete_post(&mut *guard, token, id).await
+                grpc_client::delete_post(&mut guard, token, id).await
             }
         }
     }
@@ -198,7 +198,7 @@ impl BlogClient {
             TransportClient::Http(c, url) => http_client::list_posts(c, url, limit, offset).await,
             TransportClient::Grpc(arc) => {
                 let mut guard = arc.lock().await;
-                grpc_client::list_posts(&mut *guard, limit, offset).await
+                grpc_client::list_posts(&mut guard, limit, offset).await
             }
         }
     }

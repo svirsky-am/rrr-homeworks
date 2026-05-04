@@ -94,7 +94,7 @@ pub fn parse_mt940_alt(input: &str) -> Result<Vec<Wallet>, super::errors::ParseE
         };
 
         let transactions: Result<Vec<Transaction>, ParseError> = RE_MT940_TRANSACTIONS_61_86_TR
-            .captures_iter(&body)
+            .captures_iter(body)
             .map(|caps| {
                 let datetime_str = caps
                     .name("data_time")

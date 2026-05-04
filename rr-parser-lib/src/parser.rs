@@ -150,11 +150,9 @@ impl UniParser {
             account_data.creation_time = Some(result_creation_time);
 
             let start_str = &caps["statement_period_start"];
-            let start_date = parse_russian_date(start_str).or_else(|_| {
-                Err(ParseError::ExtraFinInvalidParseRussianDate {
+            let start_date = parse_russian_date(start_str).map_err(|_| ParseError::ExtraFinInvalidParseRussianDate {
                     source: format!("Failed to parse Russian date: {}", start_str).into(),
-                })
-            })?;
+                })?;
             account_data.statement_period_start =
                 start_date.and_hms_opt(0, 0, 0).ok_or_else(|| {
                     ParseError::ExtraFinInvalidParseRussianDate {
@@ -166,11 +164,9 @@ impl UniParser {
             // сделать - это показать ошибку пользователю
 
             let end_str = &caps["statement_period_end"];
-            let end_date = parse_russian_date(end_str).or_else(|_| {
-                Err(ParseError::ExtraFinInvalidParseRussianDate {
+            let end_date = parse_russian_date(end_str).map_err(|_| ParseError::ExtraFinInvalidParseRussianDate {
                     source: format!("Failed to parse Russian date: {}", end_str).into(),
-                })
-            })?;
+                })?;
             account_data.statement_period_end = end_date.and_hms_opt(0, 0, 0).ok_or_else(|| {
                 ParseError::ExtraFinInvalidParseRussianDate {
                     source: "Invalid end date (no time part)".into(),
@@ -715,10 +711,10 @@ impl FinConverter {
         // убрав всю flush-магию :) Но ты - автор, волен делать как хочешь :)
 
         self.output_bytes = rendered_result?;
-        let mut output_format_str = format!("output_format: {}\n", self.process_output_type)
+        let output_format_str = format!("output_format: {}\n", self.process_output_type)
             .as_bytes()
             .to_vec();
-        let mut input_format_str = format!("input_format: {}\n", self.process_input_type)
+        let input_format_str = format!("input_format: {}\n", self.process_input_type)
             .as_bytes()
             .to_vec();
         // self.output_bytes.append(&mut input_format_str);
