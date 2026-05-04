@@ -37,6 +37,10 @@ jobs:
               - 'streaming_quotes_project/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
+            blogproject:
+              - 'blog-project/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
   # Job 1: Build & test core crates (rr-parser-lib + rr-file-processor)
   build-and-test-core:
     needs: changes
@@ -73,3 +77,17 @@ jobs:
 
       - name: Run tests for streaming_quotes_project
         run: cargo test -p streaming_quotes_project --test integration -- --nocapture
+
+  # Job 3: Build blog-project
+  build-and-test-streaming:
+    needs: changes
+    if: ${{ needs.changes.outputs.blogproject_changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build blog-project server
+        run: 	cargo build -p blog-server --release
+
+      - name: Build blog-project cli
+        run: 	cargo build -p blog-cli --release
