@@ -14,7 +14,6 @@ impl AuthService {
         Self { user_repo, jwt_service }
     }
     
-    // ✅ Выносим валидацию в отдельную приватную функцию
     fn validate_registration(req: &RegisterRequest) -> Result<(), DomainError> {
         if req.username.trim().is_empty() {
             return Err(DomainError::Validation("Username cannot be empty".into()));
@@ -32,7 +31,7 @@ impl AuthService {
     }
 
     pub async fn register(&self, req: RegisterRequest) -> AppResult<(String, UserPublic)> {
-        // ✅ Валидация в сервисе — работает для HTTP и gRPC!
+        // Валидация в сервисе — работает для HTTP и gRPC!
         Self::validate_registration(&req)?;
         
         let user = self.user_repo.create(req).await?;

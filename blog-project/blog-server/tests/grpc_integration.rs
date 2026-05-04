@@ -149,7 +149,6 @@ async fn test_grpc_full_flow() {
     let user_id = register.user.as_ref().unwrap().id;
     
     // === 2. Создание поста (с авторизацией) ===
-    // ✅ Правильный способ: создаём Request, добавляем метаданные, передаём ОДИН аргумент
     let create_request = auth_request(&token, CreatePostRequest {
         title: "gRPC Post".into(),
         content: "Created via gRPC".into(),

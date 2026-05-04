@@ -71,7 +71,7 @@ impl BlogApp {
         
         let resp = Request::post(&format!("{}/api/auth/register", self.server_url))
             .header("Content-Type", "application/json")
-            .body(body_str)  // ✅ Теперь передаём JsValue
+            .body(body_str)  // Теперь передаём JsValue
             .map_err(|e| JsValue::from_str(&format!("Request error: {}", e)))?
             .send()
             .await

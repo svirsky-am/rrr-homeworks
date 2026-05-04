@@ -95,8 +95,10 @@ mod3_grpc_integration_test_debug:
 
 PHONY: mod3_blog_client_build
 mod3_blog_client_build:
-	RUST_LOG=debug  cargo build -p  "blog-client"	
-
+	cargo clean -p blog-client
+	cargo check -p blog-client
+	RUST_LOG=debug  cargo build -p  "blog-client"
+# 	RUST_LOG=debug  cargo build -p  "blog-client"	 --no-default-features --features grpc
 
 PHONY: mod3_blog_cli_build
 mod3_blog_cli_build: mod3_blog_client_build
@@ -106,3 +108,10 @@ PHONY: mod3_blog_wasm_build
 mod3_blog_wasm_build:
 	bash -C blog-project/blog-wasm/pack_and_run_ui.sh
 	
+
+PHONY: mod3_blog_build_all_release
+mod3_blog_build_all:
+	cargo build -p blog-server --release
+	cargo build -p blog-client --release
+	cargo build -p blog-cli --release
+	bash -C blog-project/blog-wasm/pack_and_run_ui.sh

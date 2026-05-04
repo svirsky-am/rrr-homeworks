@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-blog-client = { path = "../blog-client", default-features = false, features = ["http"] }
+blog-client = { path = "../blog-client" }
 tokio.workspace = true
 clap = { version = "4", features = ["derive"] }
 serde.workspace = true
