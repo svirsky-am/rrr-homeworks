@@ -1,21 +1,55 @@
-# Модуль 3 (клиент-серверное blog)
+# 3. Модуль 3 (клиент-серверное blog)
 
-## Описание
+## 3.1 Описание
+- `blog-server` - сервис ведения блога
+- `blog-cli` - консольная утилита управления постами 
+- `blog-wasm` - веб-клиент управления постами
+
 Используемые крейты:
 ├── blog-server/ # Actix-web + SQLx + gRPC сервер
 ├── blog-client/ # Библиотека клиента (HTTP + gRPC)
 ├── blog-cli/ # CLI-интерфейс на базе blog-client
 └── blog-wasm/ # WASM-фронтенд (только HTTP)
+Требования к эксплуатации:
+  - сервер blog-server: Ubuntu 24;
+  - полнеченный доступ к https://crates.io/;
+  - rustup > 1.28.2;
+  - cargo > 1.90.0;
+  - клиент blog-cli: Ubuntu 24/debian12;
+  - web с client: хост с браузером и сетевой доступоностью к blog-server;
+  - базовые навыки администрирования postgeSQL;
+  - понимения основ работы с компьютерным сетями TCP/IP;
 
-## Быстрый запуск
+## 3.2 Быстрый запуск
 ```sh
-make mod3_reinit_db
-make mod3_blog_build_all_release
+make mod3_reinit_postgres_server # чтобы не дергать сервис postgre каждый раз
+make mod3_reinit_db # чтобы не перетирать данные каждый раз при запуске
+make mod3_server_tests_release # проверка работоспособности сервера перед запуском в продакшене
+make mod3_blog_build_and_run_all_release
 ```
-Релизная утилита `blog-cli` будет лежаить здесь:
-target/release/blog-cli
 
-Подготовка и запуск описаны в [расшериенном описание решения](blog-project/readme_blog_project.md)
+## 3.3 Описание ручной сборки и запуска сервера `blog-server` 
+```sh
+# Сборка релизного 'blog-server' без подключения к БД
+SQLX_OFFLINE=true cargo build -p blog-server --release
+# инициализируем базу данных и запускаем postgreSQL в пользовательском пространстве
+sh ./blog-project/blog-server/scripts/prepare_db.sh
+# Непосредственный запуск сервера
+export  DATABASE_URL=postgres://blog_admin:blog_pass@127.0.0.1:8432/r_blog_base
+target/release/blog-server
+```
+## 3.4 ## Консольная утилита управления постами `blog-cli`
+Релизная утилита `blog-cli` будет лежать по пути `target/release/blog-cli`. Подробности использования:
+```sh
+target/release/blog-cli --help
+```
+## 3.5 ## Графическая оболочка `blog-wasm`
+```sh
+./blog-project/blog-wasm/pack_and_run_ui.sh
+```
+Далее нужно открыть в браузере `http://0.0.0.0:8000/`.
+## Подробности реализации
+Подробности подготовки и запуска описаны в [расшериенном описание решения](blog-project/readme_blog_project.md)
 
 
 # Модуль 2 (клиент-серверное приложения `quote_server` и `quote_client`)

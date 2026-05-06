@@ -93,6 +93,13 @@ mod3_grpc_integration_test_debug:
 	TEST_DATABASE_URL=$(TEST_DATABASE_URL) RUST_LOG=tonic=debug  cargo test -p blog-server --test grpc_integration -- --nocapture --test-threads=1
 
 
+PHONY: mod3_server_tests_release
+mod3_server_tests_release:
+	SQLX_OFFLINE=true cargo check -p blog-server --bin blog-server --release
+	psql -d postgres -p 8432 -c "DROP DATABASE r_blog_base_test;" -h /tmp | true
+	psql -d postgres -p 8432 -c "CREATE DATABASE r_blog_base_test; " -h /tmp
+	TEST_DATABASE_URL=$(TEST_DATABASE_URL) RUST_LOG=actix_web=debug cargo test --release -p blog-server --test integration -- --nocapture --test-threads=1
+
 PHONY: mod3_blog_client_build
 mod3_blog_client_build:
 	cargo clean -p blog-client
@@ -116,12 +123,13 @@ mod3_blog_build_all_debug:
 	cargo build -p blog-cli
 	bash -C blog-project/blog-wasm/pack_and_run_ui.sh
 
-PHONY: mod3_blog_build_all_release
-mod3_blog_build_all_release:
+PHONY: mod3_blog_build_and_run_all_release
+mod3_blog_build_and_run_all_release:
 	cargo build -p blog-server --release
 	cargo build -p blog-client --release
 	cargo build -p blog-cli --release
 	bash -C blog-project/blog-wasm/pack_ui.sh
+	target/release/blog-server
 
 
 PHONY: mod3_run_release
