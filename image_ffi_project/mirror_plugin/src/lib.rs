@@ -19,12 +19,10 @@ pub extern "C" fn process_image(
     let width = width as usize;
     let height = height as usize;
     let len = width * height * 4;
-    
+
     // Безопасное создание слайса на основе переданного указателя
     let buffer = unsafe { std::slice::from_raw_parts_mut(rgba_data, len) };
-    let params_str = unsafe {
-        std::ffi::CStr::from_ptr(params).to_str().unwrap_or("{}")
-    };
+    let params_str = unsafe { std::ffi::CStr::from_ptr(params).to_str().unwrap_or("{}") };
 
     let config = match serde_json::from_str::<MirrorParams>(params_str) {
         Ok(c) => c,
@@ -74,8 +72,8 @@ mod tests {
         for y in 0..h {
             for x in 0..w {
                 let idx = (y * w + x) * 4;
-                buf[idx] = x as u8;     // R
-                buf[idx+1] = y as u8;   // G
+                buf[idx] = x as u8; // R
+                buf[idx + 1] = y as u8; // G
             }
         }
         buf

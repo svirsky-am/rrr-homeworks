@@ -28,3 +28,10 @@ PHONY: mod4_test_lcov
 mod4_test_lcov:
 	cargo llvm-cov -p  "image_processor"
 	cargo llvm-cov test --test integration_cov -p  "image_processor" -p  "blur_plugin" -p  "mirror_plugin" --html
+
+
+PHONY: mod4_fmt
+mod4_fmt:
+	cargo fmt -p  "image_processor" -p  "blur_plugin" -p  "mirror_plugin"
+	cargo clippy  --fix -p  "image_processor" -p  "blur_plugin" -p  "mirror_plugin"
+	cargo check --fix -p  "image_processor" -p  "blur_plugin" -p  "mirror_plugin"
