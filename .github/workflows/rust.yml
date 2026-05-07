@@ -79,7 +79,7 @@ jobs:
         run: cargo test -p streaming_quotes_project --test integration -- --nocapture
 
   # Job 3: Build blog-project
-  build-and-test-streaming:
+  build-and-test-blog:
     needs: changes
     if: ${{ needs.changes.outputs.blogproject_changed == 'true' }}
     runs-on: ubuntu-latest
@@ -91,3 +91,19 @@ jobs:
 
       - name: Build blog-project cli
         run: 	cargo build -p blog-cli --release
+
+  # Job 4: Build & test image_ffi_project
+  build-and-test-image-ffi-project:
+    needs: changes
+    if: ${{ needs.changes.outputs.image_ffi_project == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build mirror_plugin
+        run: cargo test -p  "mirror_plugin" --release
+
+      - name: Build blur_plugin
+        run: cargo test -p  "blur_plugin" --release
+
+      - name: Build and test image_processor
+        run: cargo test -p  "image_processor" --test integration -- --nocapture
