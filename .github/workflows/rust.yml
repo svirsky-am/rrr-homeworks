@@ -87,7 +87,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build blog-project server
-        run: 	cargo build -p blog-server --release
+        run: 	SQLX_OFFLINE=true cargo build -p blog-server --release
 
       - name: Build blog-project cli
         run: 	cargo build -p blog-cli --release
