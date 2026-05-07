@@ -8,8 +8,12 @@ struct BlurParams {
     #[serde(default = "default_iterations")]
     iterations: usize,
 }
-fn default_radius() -> usize { 2 }
-fn default_iterations() -> usize { 1 }
+fn default_radius() -> usize {
+    2
+}
+fn default_iterations() -> usize {
+    1
+}
 
 #[no_mangle]
 pub extern "C" fn process_image(
@@ -22,9 +26,7 @@ pub extern "C" fn process_image(
     let height = height as usize;
     let len = width * height * 4;
     let buffer = unsafe { std::slice::from_raw_parts_mut(rgba_data, len) };
-    let params_str = unsafe {
-        std::ffi::CStr::from_ptr(params).to_str().unwrap_or("{}")
-    };
+    let params_str = unsafe { std::ffi::CStr::from_ptr(params).to_str().unwrap_or("{}") };
 
     let config = match serde_json::from_str::<BlurParams>(params_str) {
         Ok(c) => c,
@@ -35,7 +37,7 @@ pub extern "C" fn process_image(
     };
 
     // Временный буфер для избежания конфликта чтения/записи при in-place модификации
-let mut src = buffer.to_vec();
+    let mut src = buffer.to_vec();
     let mut dst = vec![0u8; len];
 
     for _ in 0..config.iterations {
@@ -43,7 +45,7 @@ let mut src = buffer.to_vec();
         // Меняем местами указатели на данные: dst становится источником для следующей итерации
         std::mem::swap(&mut src, &mut dst);
     }
-    
+
     // Копируем финальный результат обратно в исходный буфер
     buffer.copy_from_slice(&src);
 }
@@ -105,16 +107,19 @@ mod tests {
     #[test]
     fn test_blur_averages_correctly() {
         // 3x3 изображение с разными значениями в красном канале
-        let w = 3; let h = 3;
+        let w = 3;
+        let h = 3;
         let mut buf = vec![0u8; w * h * 4];
         // Устанавливаем R каналы: 0..8
-        for i in 0..w*h { buf[i*4] = i as u8; }
-        
-        let mut dst = vec![0; w*h*4];
+        for i in 0..w * h {
+            buf[i * 4] = i as u8;
+        }
+
+        let mut dst = vec![0; w * h * 4];
         apply_box_blur(&buf, &mut dst, w, h, 1);
-        
+
         // Центральный пиксель (1,1) должен усреднить 0..8 = 36/9 = 4
-        let center_r = dst[(1*w + 1)*4];
+        let center_r = dst[(1 * w + 1) * 4];
         assert_eq!(center_r, 4);
     }
 }

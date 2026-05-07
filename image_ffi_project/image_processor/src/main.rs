@@ -1,9 +1,9 @@
 // image_processor/src/main.rs
 use clap::Parser;
 use image::RgbaImage;
+use log::{error, info};
 use std::fs;
 use std::path::PathBuf;
-use log::{info, error};
 
 mod error;
 mod plugin_loader;
@@ -37,12 +37,9 @@ struct Cli {
 }
 
 fn run() -> Result<(), AppError> {
-    
-    env_logger::Builder::from_env(
-        env_logger::Env::default().filter_or("RUST_LOG", "info")
-    )
-    .target(env_logger::Target::Stdout)
-    .init();
+    env_logger::Builder::from_env(env_logger::Env::default().filter_or("RUST_LOG", "info"))
+        .target(env_logger::Target::Stdout)
+        .init();
 
     let args = Cli::parse();
 
@@ -68,10 +65,16 @@ fn run() -> Result<(), AppError> {
     if pixels.len() != expected_len {
         return Err(AppError::BufferMismatch);
     }
-    info!("Image loaded: {}x{} ({} bytes)", width, height, expected_len);
+    info!(
+        "Image loaded: {}x{} ({} bytes)",
+        width, height, expected_len
+    );
 
     // Динамическая загрузка плагина
-    info!("Loading plugin '{}' from {:?}", args.plugin, args.plugin_path);
+    info!(
+        "Loading plugin '{}' from {:?}",
+        args.plugin, args.plugin_path
+    );
     let plugin = Plugin::load(&args.plugin, &args.plugin_path)?;
 
     // Обработка
@@ -87,8 +90,7 @@ fn run() -> Result<(), AppError> {
     }
     info!("Saving result to {:?}", args.output);
 
-    let out_img = RgbaImage::from_raw(width, height, pixels)
-        .ok_or(AppError::BufferMismatch)?;
+    let out_img = RgbaImage::from_raw(width, height, pixels).ok_or(AppError::BufferMismatch)?;
     out_img.save(&args.output)?;
 
     info!("Processing completed successfully!");

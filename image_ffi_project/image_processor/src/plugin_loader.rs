@@ -7,12 +7,7 @@ use std::path::Path;
 use crate::error::AppError;
 
 // Сигнатура функции плагина, соответствующая C API
-pub type ProcessImageFn = unsafe extern "C" fn(
-    u32,
-    u32,
-    *mut u8,
-    *const c_char,
-);
+pub type ProcessImageFn = unsafe extern "C" fn(u32, u32, *mut u8, *const c_char);
 
 pub struct Plugin {
     // Храним Library, чтобы предотвратить выгрузку библиотеки до завершения работы
@@ -36,7 +31,7 @@ impl Plugin {
         } else {
             "so"
         };
-        
+
         // 3. Формируем имя файла по конвенции cdylib: lib{name}.ext
         let lib_filename = format!("lib{}.{}", clean_name, ext);
         let lib_path = plugin_path.join(&lib_filename);
@@ -52,12 +47,16 @@ impl Plugin {
 
         // SAFETY: Мы явно запрашиваем символ с известной сигнатурой. Библиотека гарантированно
         // остаётся в памяти, пока жив `lib`. Указатель валиден до момента Drop.
-        let symbol: Symbol<ProcessImageFn> = unsafe { lib.get::<ProcessImageFn>(b"process_image")? };
+        let symbol: Symbol<ProcessImageFn> =
+            unsafe { lib.get::<ProcessImageFn>(b"process_image")? };
 
         // Извлекаем сырой указатель на функцию. Библиотека останется загруженной благодаря _lib.
         let process_image = *symbol;
 
-        Ok(Plugin { _lib: lib, process_image })
+        Ok(Plugin {
+            _lib: lib,
+            process_image,
+        })
     }
 
     pub fn process(
@@ -71,18 +70,13 @@ impl Plugin {
         let c_params = CString::new(params)
             .map_err(|_| AppError::ParamError("Params contain invalid null byte".into()))?;
 
-        // SAFETY: 
+        // SAFETY:
         // 1. `self.process_image` указывает на валидную функцию из загруженной библиотеки.
         // 2. `rgba_data` — это валидный изменяемый срез с точной длиной `width * height * 4`.
         // 3. `c_params` — валидная null-terminated строка, живущая до конца функции.
         // 4. Плагин работает синхронно и не удерживает указатели после возврата.
         unsafe {
-            (self.process_image)(
-                width,
-                height,
-                rgba_data.as_mut_ptr(),
-                c_params.as_ptr(),
-            );
+            (self.process_image)(width, height, rgba_data.as_mut_ptr(), c_params.as_ptr());
         }
         // CString и срез данных живут до конца этой функции, что гарантирует безопасность
         Ok(())
