@@ -1,3 +1,32 @@
+# 4. Модуль 4 (Безопасный обработчик изображений)
+## 4.1 Релизная сборка плагинов и утилиты `image_processor`
+```sh
+cargo build -p  "mirror_plugin" --release
+cargo build -p  "blur_plugin" --release
+cargo build -p  "image_processor" --release
+```
+## 4.2. Запуск с `Mirror Plugin`:
+```sh 
+target/release/image_processor \
+  --input image_ffi_project/test/input.png \
+  --output output/release_version_mirror.png \
+  --plugin image_ffi_project/mirror_plugin \
+  --params image_ffi_project/test/params_mirror.json \
+  --plugin-path target/release
+
+```
+## 4.3. Run with `Blur Plugin`:
+```sh 
+target/release/image_processor \
+  --input image_ffi_project/test/input.png \
+  --output output/release_version_blur.png \
+  --plugin image_ffi_project/blur_plugin \
+  --params image_ffi_project/test/params_blur.json \
+  --plugin-path target/release
+```
+## 4.4 extra
+Подробности в [расшериенном описании решения](image_ffi_project/image_ffi_project.md) 
+
 # 3. Модуль 3 (клиент-серверное blog)
 
 ## 3.1 Описание

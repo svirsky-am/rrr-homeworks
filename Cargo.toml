@@ -7,6 +7,9 @@ members = [
     "rr-file-processor", 
 # module3
     "blog-project/*", 
+# module4    
+    "image_ffi_project/image_processor", "image_ffi_project/mirror_plugin", "image_ffi_project/blur_plugin", 
+#    "image_ffi_project", 
 # "sandbox_env", 
 ]
 resolver = "2"
