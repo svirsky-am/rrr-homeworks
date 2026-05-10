@@ -1,0 +1,4 @@
+[submodule "reference-app"]
+	path = reference-app
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/reference-app
