@@ -5,17 +5,34 @@ pub mod concurrency;
 /// Здесь намеренно используется `get_unchecked` с off-by-one,
 /// из-за чего возникает UB при доступе за пределы среза.
 pub fn sum_even(values: &[i64]) -> i64 {
-    let mut acc = 0;
-    unsafe {
-        for idx in 0..=values.len() {
-            let v = *values.get_unchecked(idx);
-            if v % 2 == 0 {
-                acc += v;
-            }
-        }
+
+    // // Быстрое решение 1
+    // let mut acc = 0;
+    // unsafe {
+    //     for idx in 0..=values.len() - 1  {
+    //         let v = *values.get_unchecked(idx);
+    //         if v % 2 == 0 {
+    //             acc += v;
+    //         }
+    //     }
+    // }
+    // acc
+
+    // // Решение похожее на reference-app 1
+    //values.iter().filter(|v| *v % 2 == 0).sum()
+
+
+    // // Самое быстрое решение (похоже за счет оптимизаций компилдятора) ~546ns против   sum_even: ~164.27µs в reference app
+
+    let mut acc: i64 = 0;
+    for &v in values {
+        if (v & 1) == 0 { acc += v; }
     }
     acc
 }
+
+
+
 
 /// Подсчёт ненулевых байтов. Буфер намеренно не освобождается,
 /// что приведёт к утечке памяти (Valgrind это покажет).

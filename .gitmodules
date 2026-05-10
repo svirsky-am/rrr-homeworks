@@ -1,4 +1,8 @@
-[submodule "reference-app"]
-	path = reference-app
+[submodule "repos/reference-app"]
+	path = repos/reference-app
 	url = git@github.com:svirsky-am/rrr-homeworks.git
 	branch = module_5/reference-app
+[submodule "repos/origin-of-broken-app"]
+	path = repos/origin-of-broken-app
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/origin-of-broken-app
