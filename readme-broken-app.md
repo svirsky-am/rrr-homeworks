@@ -63,6 +63,8 @@ git lfs env
 git lfs track "artifacts/generated/*.csv"
 git lfs track "./artifacts/**/*.csv"
 git lfs ls-files
+git show HEAD:artifacts/committed/reference-app-flamegraph-test-integration.svg
+git show HEAD:artifacts/committed/reference-app-flamegraph-test-integration.svg
 ```
 
 ## add reference-app as git submodule
