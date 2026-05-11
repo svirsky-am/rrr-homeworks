@@ -62,35 +62,43 @@ scripts/get-flame-and-banches-by-broken-app.sh
 scripts/get-flame-and-banches-by-reference-app.sh
 ```
 
-# На Linux
+
+# 2. Анализ fn normalize
+
+Как таковой "небрежной нормализация строки" не замечено, т.к. она просто не полная, если нужно еще зачищать '\n' и `\t`. Двойные пробелы в текущей реализации удаляютс корректно .
+
+В файл `src/lib.rs` добавлена оригинальная функция `normalyze` из `reference_app` под названием `normalize_by_reference_app` ускореенная функция `normalize_faster_new_alt`. Для функций добвлены bench'и для сравнения скорости работы.
+Запустим 
 ```sh 
-
-
-```
-
-Внутри сессии GDB:
-
-```gdb
-source debug.gdb
-```
-
+ cargo bench  --bench criterion
+ ```
+В выводе наблюдаем уеличение скорости в 3-5 раз по сравнения с reference-app.
 ```sh
-rust-gdb target/debug/demo
-gdb -x debug.gdb ./my_program
+...
+normalize_by_reference_app
+                        time:   [2.7244 µs 2.7582 µs 2.8010 µs]
+   ...
+normalize_faster_new_alt
+                        time:   [774.71 ns 787.63 ns 805.05 ns]
 ```
+## За счет чего увеличена скорость?
+|Примененные оптимизации |   Что даёт|
+|---|---|
+|Работа с &[u8] вместо chars() | Пропускаем декодер UTF-8. ASCII-символы занимают 1 байт, проверка идёт напрямую.|
+|Один проход (O(n)) | Не создаём промежуточные итераторы, аллокаторы или временные строки c последующим сбором вектора|
+|'b|32'|`b|32' вместоto '_lowercase()`|
+|Vec::with_capacity(src.len()) | Выделение памяти происходит один раз. Итераторные цепочки часто делают push без резерва, вызывая реаллокации.|
+|LLVM Auto-Vectorization | В --release компилятор превращает этот цикл в SIMD-инструкции (AVX2/SSE4.1), обрабатывая по 16–32 байта за такт.|
 
-# На macOS
+
+Пример приведения символов ASCII к нижнему регистру с помощью `b|32`:
+```rs
+    let char_upper: u8 = b'A'; // 65 (0100 0001)
+    let char_lower = char_upper | 32; // 65 | 32 = 97 (0110 0001)
 ```
-rust-lldb target/debug/demo
-```
-
-```sh
+Заглавные ASCII буквы ('A'-'Z') имеют коды 65-90.Строчные ASCII буквы ('a'-'z') имеют коды 97-122. Разница между ними — ровно \(32\) (\(2^{5}\)). 6-й бит (считая с 0) у заглавных букв равен 0, а у строчных — 1.
 
 
-cargo check
-
-cargo test
-```
 # Sampling: периодические снимки состояния
 ```sh 
 sudo perf record -g ./target/debug/demo
@@ -126,10 +134,6 @@ git show HEAD:artifacts/committed/reference-app-flamegraph-test-integration.svg
 git submodule init
 git submodule add -b module_5/reference-app git@github.com:svirsky-am/rrr-homeworks.git repos/reference-app
 git submodule add -b module_5/origin-of-broken-app git@github.com:svirsky-am/rrr-homeworks.git repos/origin-of-broken-app
-
-
-
-
 git submodule update --recursive
 ```
 

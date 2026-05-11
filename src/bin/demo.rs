@@ -7,7 +7,8 @@ fn main() {
     let data = [1_u8, 0, 2, 3];
     println!("non-zero bytes: {}", leak_buffer(&data));
 
-    let text = " Hello World ";
+    // let text = " Hello World ";
+    let text = " He  l            llo\tt\n  Worlds ";
     println!("normalize: {}", normalize(text));
 
     let fib = algo::slow_fib(20);

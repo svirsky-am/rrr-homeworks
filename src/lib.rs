@@ -55,9 +55,39 @@ pub fn leak_buffer(input: &[u8]) -> usize {
 
 /// Небрежная нормализация строки: удаляем пробелы и приводим к нижнему регистру,
 /// но игнорируем повторяющиеся пробелы/табуляции внутри текста.
+/// 
 pub fn normalize(input: &str) -> String {
     input.replace(' ', "").to_lowercase()
+    // input.trim().to_lowercase()
+    // input.trim().to_lowercase()
 }
+
+pub fn normalize_by_reference_app(input: &str) -> String {
+    input
+        .split_whitespace()
+        .collect::<String>()
+        .to_lowercase()
+} 
+
+/// b | 32 преобразует A..Z → a..z.
+///  Кириллица, эмодзи и другие UTF-8 символы останутся нетронутыми (их байты не попадают в диапазоны b' ', b'A'..=b'Z').
+///
+pub fn normalize_faster_new_alt(src: &str) -> String {
+    let mut out = Vec::with_capacity(src.len());
+    for &b in src.as_bytes() {
+        match b {
+            b' ' | b'\t' | b'\n' => continue,
+            // b | 32 эквивалентен to_ascii_lowercase(), но компилятор оптимизирует это в одну инструкцию
+            b'A'..=b'Z' => out.push(b | 32),
+            _ => out.push(b),
+        }
+    }
+    // SAFETY: Мы модифицируем только ASCII-байты (0x00..0x7F) и не нарушаем 
+    // структуру многобайтовых UTF-8 последовательностей. Валидность UTF-8 гарантирована.
+    unsafe { String::from_utf8_unchecked(out) }
+}
+
+
 
 /// Логическая ошибка: усредняет по всем элементам, хотя требуется учитывать
 /// только положительные. Деление на длину среза даёт неверный результат.
