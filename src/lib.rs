@@ -7,7 +7,7 @@ pub mod concurrency;
 pub fn sum_even(values: &[i64]) -> i64 {
     let mut acc = 0;
     unsafe {
-        for idx in 0..=values.len() {
+        for idx in 0..=values.len() - 1 {
             let v = *values.get_unchecked(idx);
             if v % 2 == 0 {
                 acc += v;
