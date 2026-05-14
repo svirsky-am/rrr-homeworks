@@ -20,10 +20,10 @@ mod5_run_sanitize:
 	RUSTFLAGS="-Zsanitizer=address" cargo +nightly run --bin demo
 
 
-PHONY: mod5_run_miri
-mod5_run_miri:
+PHONY: mod5_2_3_run_miri
+mod5_2_3_run_miri:
 # 	MIRIFLAGS=-Zmiri-env-forward=RUST_BACKTRACE cargo +nightly miri test 
-	cargo  miri test 
+	MIRIFLAGS=-Zmiri-backtrace=full cargo  miri test --manifest-path ./repos/origin-of-broken-app-with-hot-fix/Cargo.toml  2>&1 | tee artifacts/generated/2_3_miri_after_hot_fix.log
 
 
 

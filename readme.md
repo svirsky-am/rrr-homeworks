@@ -9,6 +9,7 @@ git submodule update --recursive
     - `origin-of-broken-app`  - ветка `module_5/origin-of-broken-app` с оригинальными исходниками `broken-app`;
     - `origin-of-broken-app-fix-unit`  - ветка `module_5/origin-of-broken-app` оригинальные исходники `broken-app` с правкой unit-тестов;
     - `origin-of-broken-app-with-hot-fix` - ветка `module_5/origin-of-broken-app-with-hot-fix'` с простыми фиксами тестов без оптимизаций.
+    - `roken-app-2.4-fix-leak-buffer-after-miri` - ветка `module_5/roken-app-2.4-fix-leak-buffer-after-miri'` с фиксом утечки `fn leak_buffer`.
 <!-- - module_5/fix-solution-of-broken-appe -->
 
 <!-- - module_5/reference-app-criterion-via-black-box -->
@@ -95,14 +96,14 @@ cargo test \
     sums_even_numbers
 ```
 Тест пройден.
-## 2.1.2 Правка фильтра позитивных значений для  `averages_only_positive`
+## 2.2.1 Правка фильтра позитивных значений для  `averages_only_positive`
 Соберем тест:
 ```sh
-export TEST_EXEC_PATH=$(cargo test --no-run --manifest-path ./repos/origin-of-broken-app-with-hot-fix/Cargo.toml \
+export TEST_EXEC_PATH=$(cargo test --no-run --manifest-path ./repos/origin-of-broken-app/Cargo.toml \
  averages_only_positive --message-format=json 2>/dev/null | jq -r 'select(.reason == "compiler-artifact" ) | .executable ' | grep  integration)
 # проверяем то что бинарник нашелся
 echo "Путь к бинарнику теста: $TEST_EXEC_PATH" 
-# Путь к бинарнику теста: /home/svirsky/repos/yandex/broken-app/repos/origin-of-broken-app-with-hot-fix/target/debug/deps/integration-d7b56cc9cfa7dfa1
+# Путь к бинарнику теста: /home/svirsky/repos/yandex/broken-app/repos/origin-of-broken-app/target/debug/deps/integration-d7b56cc9cfa7dfa1
 ```
 Проверяем запуск теста:
 ```sh
@@ -143,12 +144,48 @@ pub fn average_positive(values: &[i64]) -> f64 {
 cargo test --manifest-path ./repos/origin-of-broken-app-with-hot-fix/Cargo.toml \
  averages_only_positive
 ```
+Контрольная проверка запуска тестов:
+```sh
+cargo  test --manifest-path ./repos/origin-of-broken-app-with-hot-fix/Cargo.toml
+```
+## 2.3 Запуск cargo +nightly miri test для поиска UB.
+```sh
+MIRIFLAGS=-Zmiri-backtrace=full cargo  miri test --manifest-path ./repos/origin-of-broken-app-with-hot-fix/Cargo.toml
+```
+В логах (`artifacts/committed/2_3_miri_after_hot_fix.log`) в стеке видим 
+>         7: broken_app::leak_buffer
+>                at src/lib.rs:21:17: 21:31
 
+Похоже мы вызываем Box::into_raw, но не освобождаем память через Box::from_raw.
+## 2.4 Фикс `leak_buffer`
+Применим правку утечки на базе ветки `module_5/origin-of-broken-app-with-hot-fix`, скопировав решение в ветку `module_5/broken-app-2.4-fix-leak-buffer-after-miri`.
+<!-- git submodule add -b module_5/origin-of-broken-app-with-hot-fix git@github.com:svirsky-am/rrr-homeworks.git module_5/broken-app-2.4-fix-leak-buffer-after-miri -->
+Правка будет заключаться в освобождении бокса:
+```rs
+pub fn leak_buffer(input: &[u8]) -> usize {
+    let boxed = input.to_vec().into_boxed_slice();
+    let len = input.len();
+    let raw = Box::into_raw(boxed) as *mut u8;
 
+    let mut count = 0;
+    unsafe {
+        for i in 0..len {
+            if *raw.add(i) != 0_u8 {
+                count += 1;
+            }
+        }
+        // освобождаем память
+        let _ = unsafe { Box::from_raw(std::slice::from_raw_parts_mut(raw, len)) };
+    }
+    count
+}
+```
+Box::from_raw ожидает *mut [u8], поэтому нужно восстановить слайс правильной длины через slice::from_raw_parts_mut.
 
-и для `averages_only_positive`:
-
-
+Проверяем фикс:
+```sh
+cargo  miri test --manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml
+```
 
 
 ## Шаг 6. Оптимизация

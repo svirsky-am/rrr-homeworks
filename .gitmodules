@@ -14,3 +14,7 @@
 	path = repos/origin-of-broken-app-with-hot-fix
 	url = git@github.com:svirsky-am/rrr-homeworks.git
 	branch = module_5/origin-of-broken-app
+[submodule "repos/broken-app-2.4-fix-leak-buffer-after-miri"]
+	path = repos/broken-app-2.4-fix-leak-buffer-after-miri
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/broken-app-2.4-fix-leak-buffer-after-miri
