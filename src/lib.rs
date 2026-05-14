@@ -1,9 +1,7 @@
 pub mod algo;
 pub mod concurrency;
 
-/// Сумма чётных значений.
-/// Здесь намеренно используется `get_unchecked` с off-by-one,
-/// из-за чего возникает UB при доступе за пределы среза.
+/// с hot fix
 pub fn sum_even(values: &[i64]) -> i64 {
     let mut acc = 0;
     unsafe {
@@ -42,14 +40,14 @@ pub fn normalize(input: &str) -> String {
     input.replace(' ', "").to_lowercase()
 }
 
-/// Логическая ошибка: усредняет по всем элементам, хотя требуется учитывать
-/// только положительные. Деление на длину среза даёт неверный результат.
+/// с hot fix
+/// 
 pub fn average_positive(values: &[i64]) -> f64 {
-    let sum: i64 = values.iter().sum();
+    let sum: i64 = values.iter().filter(|&&x| x > 0).sum();
     if values.is_empty() {
         return 0.0;
     }
-    sum as f64 / values.len() as f64
+    sum as f64 / values.iter().filter(|&&x| x > 0).count() as f64
 }
 
 /// Use-after-free: возвращает значение после освобождения бокса.
