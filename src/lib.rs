@@ -29,7 +29,7 @@ pub fn leak_buffer(input: &[u8]) -> usize {
                 count += 1;
             }
         }
-        // утечка: не вызываем Box::from_raw(raw);
+        let _ = unsafe { Box::from_raw(std::slice::from_raw_parts_mut(raw, len)) };
     }
     count
 }
