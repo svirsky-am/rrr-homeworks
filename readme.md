@@ -1,19 +1,60 @@
+# Шаг 1. Ознакомление
+## 1.1 Клонируйте оба проекта (broken-app, reference-app).
+Сделаем доступными исходники для полученися логов и отчетов с помощью git submodules:
+```sh
+git submodule update --recursive
+```
+в папку `repos` будут вынружены экземпляры brocken_app в разных сосотяниях:
+    - `reference-app` - ветка `module_5/reference-app` с ожидаемым поведением тестов `broker_app`;
+    - `origin-of-broken-app`  - ветка `module_5/origin-of-broken-app` с оригинальными исходниками `broken-app`;
+    - `origin-of-broken-app-fix-unit`  - ветка `module_5/origin-of-broken-app` оригинальные исходники `broken-app` с правкой unit-тестов; 
+<!-- - module_5/fix-solution-of-broken-appe -->
 
-module_5/reference-app
-module_5/reference-app-criterion-via-black-box
-module_5/origin-of-broken-app
-module_5/fix-solution-of-broken-app
+<!-- - module_5/reference-app-criterion-via-black-box -->
+## 1.2. Фиксация падающих тестов в `origin-of-broken-app`
 
- rust-lldb 
+Проверим запуск тестов 
+```sh
+cargo check \
+    --manifest-path ./repos/origin-of-broken-app/Cargo.toml
+cargo test \
+    --manifest-path ./repos/origin-of-broken-app/Cargo.toml
+```
 
- rust-gdb
+Получаем падение для `sums_even_numbers` :
+```sh
+cargo test \
+		--manifest-path ./repos/origin-of-broken-app/Cargo.toml sums_even_numbers
+```
+получаем:
+> thread 'sums_even_numbers' (2137351) panicked at src/lib.rs:11:29:
+    unsafe precondition(s) violated: slice::get_unchecked requires that the index is within the slice
 
-# 1. Правка UB на для sum_even
-Для нагляжности можно вынесем конец диапазона в переменную `len_of_arr`  и.
-Поставим на ней точку останова на 11 ой строчке `src/lib.rs` и запустим дебагер. Видно что итретор следует до `idx=4`, т.к. values.len()=4, но индексация массива начинается с `0` и по хоршему надо выходить  при  `idx=3` чтобы не выйти за границы массива. 
+и для `averages_only_positive`:
+```sh
+cargo test  \
+        --manifest-path ./repos/origin-of-broken-app/Cargo.toml averages_only_positive
+```
+c ошибкой:
+> thread 'averages_only_positive' (2138421) panicked at tests/integration.rs:36:5:
+assertion failed: (broken_app::average_positive(&nums) - 10.0).abs() < f64::EPSILON
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+## 1.3 Воспролизведение ожидаемого результата
+Все asert'ы от тестов прошли без паник: 
+```sh
+cargo test  \
+        --manifest-path ./repos/reference-app/Cargo.toml
+```
+В stdout видим результат:
+> test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+# Шаг 2. Поиск и исправление багов
+## 2.1. Правка UB на для `sum_even`
+Паника после запуска теста отсылает на к месту падения в исходниках `src/lib.rs:11 `.
+Поставим точку останова на 11 ой строчке `src/lib.rs` и запустим дебагер. Видно что итератор следует до `idx=4`, т.к. values.len()=4, но индексация массива начинается с `0`, а последний элемент имеет индекс `3` и по хоршему надо выходить  при  `idx=3` чтобы не выйти за границы массива. 
 ![Состояние переменных перед вызоввом *values.get_unchecked(idx)](artifacts/committed/1.UB_sum_even.png)
 
-## Воспроизведение:
+### 2.1.1 Воспроизведение:
 Запуск дебаггера оригинальном broken-app:
 ```sh 
 RUSTFLAGS="-C debuginfo=2 " cargo build  \
@@ -30,7 +71,7 @@ idx = 4
 iter = core::ops::range::RangeInclusive<usize> {start: 4, end: 4, exhausted: true}
 acc = 6
 ```
-## Быстрый фикс
+### 2.1.1 Быстрый фикс
 
 Решение : вычесть из конца диапазона `1`:
 ```rs
@@ -47,8 +88,12 @@ pub fn sum_even(values: &[i64]) -> i64 {
     acc
 }
 ```
-## Альтернативное решение
-Самое быстрое решение (похоже за счет оптимизаций компилдятора) ~546ns против   sum_even: ~164.27µs в reference app
+
+
+
+## Шаг 6. Оптимизация
+## 6.1 Микро оптимизация `sum_even`
+Самое быстрое решение (похоже за счет оптимизаций компилдятора) ~546ns против   : ~164.27µs в reference app
 ```rs
 let mut acc: i64 = 0;
 for &v in values {

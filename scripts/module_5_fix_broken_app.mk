@@ -1,4 +1,20 @@
 
+
+
+
+PHONY: mod5_1.2_check_build_broken_app
+mod5_1.2_check_build_broken_app:
+	cargo check \
+		--manifest-path ./repos/origin-of-broken-app/Cargo.toml
+	cargo test \
+		--manifest-path ./repos/origin-of-broken-app/Cargo.toml
+
+# cargo test \
+# 		--manifest-path ./repos/origin-of-broken-app/Cargo.toml sums_even_numbers
+
+
+
+
 PHONY: mod5_run_sanitize
 mod5_run_sanitize:
 	RUSTFLAGS="-Zsanitizer=address" cargo +nightly run --bin demo

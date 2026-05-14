@@ -6,3 +6,7 @@
 	path = repos/origin-of-broken-app
 	url = git@github.com:svirsky-am/rrr-homeworks.git
 	branch = module_5/origin-of-broken-app
+[submodule "repos/origin-of-broken-app-fix-unit"]
+	path = repos/origin-of-broken-app-fix-unit
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/reference-app
