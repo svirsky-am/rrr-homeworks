@@ -186,7 +186,7 @@ Box::from_raw ожидает *mut [u8], поэтому нужно восстан
 ```sh
 cargo  miri test --manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml
 ```
-
+Тесты пройдены без ошибок (лог `artifacts/committed/2_4_fix_leak_buffer_after_miri.log`)
 
 ## Шаг 6. Оптимизация
 ## 6.1 Микро оптимизация `sum_even`

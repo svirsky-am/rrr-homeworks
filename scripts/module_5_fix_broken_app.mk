@@ -25,6 +25,9 @@ mod5_2_3_run_miri:
 # 	MIRIFLAGS=-Zmiri-env-forward=RUST_BACKTRACE cargo +nightly miri test 
 	MIRIFLAGS=-Zmiri-backtrace=full cargo  miri test --manifest-path ./repos/origin-of-broken-app-with-hot-fix/Cargo.toml  2>&1 | tee artifacts/generated/2_3_miri_after_hot_fix.log
 
+PHONY: mod5_2_4_fix_after_miri
+mod5_2_4_fix_after_miri:
+	cargo  miri test --manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml 2>&1 | tee artifacts/generated/2_4_fix_leak_buffer_after_miri.log
 
 
 
