@@ -7,7 +7,8 @@ git submodule update --recursive
 в папку `repos` будут вынружены экземпляры brocken_app в разных сосотяниях:
     - `reference-app` - ветка `module_5/reference-app` с ожидаемым поведением тестов `broker_app`;
     - `origin-of-broken-app`  - ветка `module_5/origin-of-broken-app` с оригинальными исходниками `broken-app`;
-    - `origin-of-broken-app-fix-unit`  - ветка `module_5/origin-of-broken-app` оригинальные исходники `broken-app` с правкой unit-тестов; 
+    - `origin-of-broken-app-fix-unit`  - ветка `module_5/origin-of-broken-app` оригинальные исходники `broken-app` с правкой unit-тестов;
+    - `origin-of-broken-app-with-hot-fix` - ветка `module_5/origin-of-broken-app-with-hot-fix'` с простыми фиксами тестов без оптимизаций.
 <!-- - module_5/fix-solution-of-broken-appe -->
 
 <!-- - module_5/reference-app-criterion-via-black-box -->
@@ -71,8 +72,7 @@ idx = 4
 iter = core::ops::range::RangeInclusive<usize> {start: 4, end: 4, exhausted: true}
 acc = 6
 ```
-### 2.1.1 Быстрый фикс
-
+### 2.1.2 Быстрый фикс
 Решение : вычесть из конца диапазона `1`:
 ```rs
 pub fn sum_even(values: &[i64]) -> i64 {
@@ -88,6 +88,66 @@ pub fn sum_even(values: &[i64]) -> i64 {
     acc
 }
 ```
+Применим фикс на репозитории `repos/origin-of-broken-app-with-hot-fix` и запустим тест:
+```sh
+cargo test \
+    --manifest-path ./repos/origin-of-broken-app-with-hot-fix/Cargo.toml \
+    sums_even_numbers
+```
+Тест пройден.
+## 2.1.2 Правка фильтра позитивных значений для  `averages_only_positive`
+Соберем тест:
+```sh
+export TEST_EXEC_PATH=$(cargo test --no-run --manifest-path ./repos/origin-of-broken-app-with-hot-fix/Cargo.toml \
+ averages_only_positive --message-format=json 2>/dev/null | jq -r 'select(.reason == "compiler-artifact" ) | .executable ' | grep  integration)
+# проверяем то что бинарник нашелся
+echo "Путь к бинарнику теста: $TEST_EXEC_PATH" 
+# Путь к бинарнику теста: /home/svirsky/repos/yandex/broken-app/repos/origin-of-broken-app-with-hot-fix/target/debug/deps/integration-d7b56cc9cfa7dfa1
+```
+Проверяем запуск теста:
+```sh
+$TEST_EXEC_PATH # 
+```
+Наблюдаем срабатывание asert`ов
+ > assertion failed: (broken_app::average_positive(&nums) - 10.0).abs() < f64::EPSILON
+Таким образом нас интересует результат возвращаемый `broken_app::average_positive(&nums)`.
+Запускаем дебагер:
+
+```sh
+rust-gdb $TEST_EXEC_PATH
+```
+Делаем точку останова на возврате функции 
+
+```sh #(gdb)
+break src/lib.rs:52
+#Breakpoint 1 at 0x7a670: file src/lib.rs, line 52.
+run
+# Thread 2 "averages_only_p" hit Breakpoint 1, broken_app::average_positive (values=&[i64](size=3) = {...}) at src/lib.rs:52
+info args
+#values = &[i64](size=3) = {-5, 5, 15}
+info locals
+#sum = 15
+```
+Делаем вывод о том что элементы массива скорее всего сложились как (-5)+5+15.
+Применим фильтр при складывании элементов:
+```rs
+pub fn average_positive(values: &[i64]) -> f64 {
+    let sum: i64 = values.iter().filter(|&&x| x > 0).sum();
+    if values.is_empty() {
+        return 0.0;
+    }
+    sum as f64 / values.iter().filter(|&&x| x > 0).count() as f64
+}
+```
+```sh
+cargo test --manifest-path ./repos/origin-of-broken-app-with-hot-fix/Cargo.toml \
+ averages_only_positive
+```
+
+
+
+и для `averages_only_positive`:
+
 
 
 
