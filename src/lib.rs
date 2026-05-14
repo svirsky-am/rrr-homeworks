@@ -88,15 +88,28 @@ pub fn normalize_faster_new_alt(src: &str) -> String {
 }
 
 
-
+/// Вводная:
 /// Логическая ошибка: усредняет по всем элементам, хотя требуется учитывать
 /// только положительные. Деление на длину среза даёт неверный результат.
+/// 
+/// Правка:
 pub fn average_positive(values: &[i64]) -> f64 {
-    let sum: i64 = values.iter().sum();
-    if values.is_empty() {
+    let mut acc: i64 = 0;
+    let mut delimiter  = 0;
+    for &v in values {
+        if (v) > 0 { acc += v; delimiter +=1}
+    }
+    acc as f64 / delimiter as f64
+}
+
+pub fn average_positive_by_reference_app(values: &[i64]) -> f64 {
+    
+    let positives: Vec<i64> = values.iter().copied().filter(|v| *v > 0).collect();
+    if positives.is_empty() {
         return 0.0;
     }
-    sum as f64 / values.len() as f64
+    let sum: i64 = positives.iter().sum();
+    sum as f64 / positives.len() as f64
 }
 
 /// Use-after-free: возвращает значение после освобождения бокса.

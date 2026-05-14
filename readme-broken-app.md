@@ -62,8 +62,48 @@ scripts/get-flame-and-banches-by-broken-app.sh
 scripts/get-flame-and-banches-by-reference-app.sh
 ```
 
+# 2. Правка обчног запуска cargo test
 
-# 2. Анализ fn normalize
+Перед запуском тестов miri и Valgrind починим обычный запуск unit-тестов.
+```sh
+cargo test
+```
+имеем срабатывания асерта: 
+```
+---- averages_only_positive stdout ----
+
+thread 'averages_only_positive' (1479910) panicked at tests/integration.rs:36:5:
+assertion failed: (broken_app::average_positive(&nums) - 10.0).abs() < f64::EPSILON
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
+ Перепишем с использованием аккумуляторов без итераторов:
+ ```rs 
+pub fn average_positive(values: &[i64]) -> f64 {
+    let mut acc: i64 = 0;
+    let mut delimiter  = 0;
+    for &v in values {
+        if (v) > 0 { acc += v; delimiter +=1}
+    }
+    acc as f64 / delimiter as f64
+}
+```
+Чтобы оценить эффективность , добавим реализацию из reference_app через итераторы, назвав функцию `average_positive_by_reference_app` и соответсвующий тесты criterion `bench_average_positive_by_reference_app` и `bench_average_positive`.  Теперь построим criterion :
+```sh
+cargo bench  --bench criterion
+``` 
+
+ Получяаем ускорение x10 относительно `reference-app`:
+ ```
+ bench_average_positive  time:   [40.005 ns 40.636 ns 41.329 ns]
+ bench_average_positive_by_reference_app
+                        time:   [636.34 ns 641.22 ns 647.17 ns]
+ ```
+
+
+
+
+# 3. Анализ fn normalize
 
 Как таковой "небрежной нормализация строки" не замечено, т.к. она просто не полная, если нужно еще зачищать '\n' и `\t`. Двойные пробелы в текущей реализации удаляютс корректно .
 
@@ -81,6 +121,12 @@ normalize_by_reference_app
 normalize_faster_new_alt
                         time:   [774.71 ns 787.63 ns 805.05 ns]
 ```
+или отчет html:
+```sh 
+xdg-open target/criterion/report/index.html
+```
+
+
 ## За счет чего увеличена скорость?
 |Примененные оптимизации |   Что даёт|
 |---|---|
@@ -97,6 +143,31 @@ normalize_faster_new_alt
     let char_lower = char_upper | 32; // 65 | 32 = 97 (0110 0001)
 ```
 Заглавные ASCII буквы ('A'-'Z') имеют коды 65-90.Строчные ASCII буквы ('a'-'z') имеют коды 97-122. Разница между ними — ровно \(32\) (\(2^{5}\)). 6-й бит (считая с 0) у заглавных букв равен 0, а у строчных — 1.
+
+# 3. Инструментированная сборка с Miri
+```sh 
+rustup component add miri
+```
+```sh
+cargo +nightly miri setup  # один раз
+cargo +nightly miri test counts_non_zero_bytes
+```
+
+# 3. Инструментированная сборка с valgrind
+```sh 
+
+sudo apt install valgrindy
+
+cargo install cargo-valgrind
+```
+
+
+
+```sh
+
+valgrind --leak-check=full ./target/debug/your_binary_name
+```
+
 
 
 # Sampling: периодические снимки состояния

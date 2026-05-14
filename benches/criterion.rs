@@ -1,4 +1,6 @@
-use broken_app::{algo, sum_even, normalize, normalize_by_reference_app,  normalize_faster_new_alt};
+use broken_app::{algo, sum_even, normalize, normalize_by_reference_app,  normalize_faster_new_alt, 
+    average_positive_by_reference_app, 
+    average_positive};
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion, black_box};
 
 fn bench_sum_even(c: &mut Criterion) {
@@ -25,6 +27,7 @@ fn bench_dedup(c: &mut Criterion) {
 
 static STRING_TO_NORMALIZE: &str = " Hel\n\nlo \t\tWor\t\tld  Hel\n\nlo \t\tWor\t\tld  Hel\n\nlo \t\tWor\t\tld  Hel\n\nlo \t\tWor\t\tld  Hel\n\nlo \t\tWor\t\tld  Hel\n\nlo \t\tWor\t\tld  Hel\n\nlo \t\tWor\t\tld ";
 
+
 fn bench_normalize_by_reference_app(c: &mut Criterion) {
     // let data: Vec<u64> = (0..5_000).flat_map(|n| [n, n]).collect();
     c.bench_function("normalize_by_reference_app", |b| {
@@ -41,7 +44,25 @@ fn bench_normalize_faster_new_alt(c: &mut Criterion) {
     });
 }
 
+fn bench_average_positive(c: &mut Criterion) {
+    let nums = [-5, 5, 15, -5, 5, 15,-5, 5, 15,-5, 5, 15,-5, 5, 15-5, 5, 15];
+
+    c.bench_function("bench_average_positive", |b| {
+        b.iter(|| average_positive(black_box(&nums)));
+    });
+}
 
 
-criterion_group!(benches, bench_sum_even, bench_fib, bench_dedup, bench_normalize_by_reference_app, bench_normalize_faster_new_alt);
+fn bench_average_positive_by_reference_app(c: &mut Criterion) {
+    let nums = [-5, 5, 15, -5, 5, 15,-5, 5, 15,-5, 5, 15,-5, 5, 15-5, 5, 15];
+    c.bench_function("bench_average_positive_by_reference_app", |b| {
+        b.iter(|| average_positive_by_reference_app(black_box(&nums)));
+    });
+}
+
+criterion_group!(benches, bench_sum_even, bench_fib, bench_dedup, 
+    bench_normalize_by_reference_app, 
+    bench_normalize_faster_new_alt,
+    bench_average_positive,
+    bench_average_positive_by_reference_app);
 criterion_main!(benches);
