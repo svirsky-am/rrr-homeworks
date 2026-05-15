@@ -188,6 +188,83 @@ cargo  miri test --manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-mi
 ```
 Тесты пройдены без ошибок (лог `artifacts/committed/2_4_fix_leak_buffer_after_miri.log`)
 
+## 2.5. Запуск с Valgrind
+### 2.5.1 asan
+Проверим текущее состояние:
+```sh
+RUSTFLAGS="-Zsanitizer=address" cargo +nightly test  \
+	--target x86_64-unknown-linux-gnu \
+	--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml
+```
+По логу `artifacts/committed/mod5_2_5_1_valgrind_asan_first_one.log` ошибок не замечено.
+### 2.5.2 tsan
+```sh
+RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer" cargo +nightly test \
+	--target x86_64-unknown-linux-gnu \
+	--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml
+```
+
+По логу `artifacts/committed/mod5_2_5_2_valgrind_tsan_first_one.log` наблюдаем срабатывания tsan:
+```
+/usr/bin/addr2line: DWARF error: invalid or unhandled FORM value: 0x23
+==================
+WARNING: ThreadSanitizer: data race (pid=2359557)
+  Write of size 8 at 0x729400000148 by thread T2:
+    #0 memcpy ??:? (integration-a4fdbff301df0fb7+0x6c82e) (BuildId: 63a719d20515dfa93006ddc55268ce93f2fe41ec)
+    #1 <std::sync::mpmc::Sender<test::event::CompletedTest>>::send test.905ab08d71382a9a-cgu.0:? (integration-a4fdbff301df0fb7+0x115892) (BuildId: 63a719d20515dfa93006ddc55268ce93f2fe41ec)
+
+  Previous write of size 8 at 0x729400000148 by thread T1:
+    #0 calloc ??:? (integration-a4fdbff301df0fb7+0x6f7c7) (BuildId: 63a719d20515dfa93006ddc55268ce93f2fe41ec)
+    #1 <std::sync::mpmc::Sender<test::event::CompletedTest>>::send test.905ab08d71382a9a-cgu.0:? (integration-a4fdbff301df0fb7+0x114f20) (BuildId: 63a719d20515dfa93006ddc55268ce93f2fe41ec)
+
+  Location is heap block of size 9680 at 0x729400000000 allocated by thread T1:
+    #0 calloc ??:? (integration-a4fdbff301df0fb7+0x6f7c7) (BuildId: 63a719d20515dfa93006ddc55268ce93f2fe41ec)
+    #1 <std::sync::mpmc::Sender<test::event::CompletedTest>>::send test.905ab08d71382a9a-cgu.0:? (integration-a4fdbff301df0fb7+0x114f20) (BuildId: 63a719d20515dfa93006ddc55268ce93f2fe41ec)
+
+  Thread T2 'counts_non_zero' (tid=2359560, running) created by main thread at:
+    #0 pthread_create ??:? (in
+```
+
+
+# Шаг 3. Подтверждение корректности
+## 3.2 Добавление регрисионных тестов
+### Для `leak_buffer`
+```rs
+#[test]
+fn test_leak_buffer_zero_vs_nonzero_distinction() {
+    assert_eq!(leak_buffer(&[0, 0, 0]), 0);
+    assert_eq!(leak_buffer(&[1, 1, 1]), 3);
+    assert_eq!(leak_buffer(&[0, 1, 0, 1, 0]), 2);
+    assert_eq!(leak_buffer(&[255, 0, 128, 0, 1]), 3);
+    let full = [0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    // Берём срез, начинающийся с нечётного индекса
+    assert_eq!(leak_buffer(&full[1..6]), 5); // [1,2,3,4,5] → все ненулевые
+    //Большие данные (проверка производительности и переполнений)
+    let mut input = vec![0u8; 10_000];
+    // Каждое 10-е значение ненулевое
+    for i in (0..input.len()).step_by(10) {
+        input[i] = 42;
+    }
+    assert_eq!(leak_buffer(&input), 1_000);
+}
+
+/// Все нули → результат 0
+#[test]
+fn test_leak_buffer_all_zeros() {
+    let input = [0u8; 100];
+    assert_eq!(leak_buffer(&input), 0);
+}
+
+/// Все ненулевые → результат = длина
+#[test]
+fn test_leak_buffer_all_non_zero() {
+    let input = [1u8; 50];
+    assert_eq!(leak_buffer(&input), 50);
+}
+
+```
+
+
 ## Шаг 6. Оптимизация
 ## 6.1 Микро оптимизация `sum_even`
 Самое быстрое решение (похоже за счет оптимизаций компилдятора) ~546ns против   : ~164.27µs в reference app

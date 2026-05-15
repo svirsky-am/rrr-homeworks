@@ -29,6 +29,19 @@ PHONY: mod5_2_4_fix_after_miri
 mod5_2_4_fix_after_miri:
 	cargo  miri test --manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml 2>&1 | tee artifacts/generated/2_4_fix_leak_buffer_after_miri.log
 
+PHONY: mod5_2_5_1_valgrind_asan
+mod5_2_5_1_valgrind_asan:
+	RUSTFLAGS="-Zsanitizer=address" cargo +nightly test  \
+	--target x86_64-unknown-linux-gnu \
+	--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml 2>&1 | tee artifacts/generated/mod5_2_5_1_valgrind_asan_first_one.log
+
+PHONY: mod5_2_5_2_valgrind_tsan
+mod5_2_5_2_valgrind_tsan:
+	RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer" cargo +nightly test \
+	--target x86_64-unknown-linux-gnu \
+	--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml  2>&1 \
+	| tee artifacts/generated/mod5_2_5_2_valgrind_tsan_first_one.log 
+
 
 
 PHONY: mod5_run_sanitize_sums_even_numbers
