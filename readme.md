@@ -247,7 +247,7 @@ RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer " cargo +nig
 ## 3.1 Добавление регрисионных тестов
 Правки функций `sum_even` и `average_positive` покрываются имеющимися unit-тестами.
 
-### 3.1.1 Для `leak_buffer`
+### 3.1.1 Для регрисионных unit-тестов `leak_buffer`
 
 На базе `broken-app-2.4-fix-leak-buffer-after-miri` создадим ветку `broken-app-3.1.1-add-unit-tests-for-leak-buff`
 <!-- git submodule add -b module_5/broken-app-2.4-fix-leak-buffer-after-miri git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-3.1.1-add-unit-tests-for-leak-buff -->
@@ -292,7 +292,22 @@ fn test_leak_buffer_all_non_zero() {
 cargo test \
 	--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml
 ```
-В логе `artifacts/committed/broken-app-3.1.1-add-unit-tests-for-leak-buff .log` срабатываний tsan не обнаружено.
+В логе `artifacts/committed/broken-app-3.1.1-add-unit-tests-for-leak-buff.log` срабатываний tsan не обнаружено.
+
+### 3.2 Контрольная проверка фиксов
+Запустим имеющиеся тесты на ветке `broken-app-3.1.1-add-unit-tests-for-leak-buff`:
+```sh
+cargo  miri test --manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml
+RUSTFLAGS="-Zsanitizer=address" cargo +nightly test  \
+		--target x86_64-unknown-linux-gnu \
+		--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml
+RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer " cargo +nightly run --bin demo \
+		--target x86_64-unknown-linux-gnu \
+		--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml
+```
+Результат в `artifacts/committed/mod5_3_1_2_check_after_hot_fix.log`
+
+
 
 ## Шаг 6. Оптимизация
 ## 6.1 Микро оптимизация `sum_even`

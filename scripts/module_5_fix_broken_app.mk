@@ -63,6 +63,17 @@ mod5_3_1_1_add_unit_tests_for_leak_buff:
 		--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml 2>&1 \
 		| tee artifacts/generated/broken-app-3.1.1-add-unit-tests-for-leak-buff.log
 
+PHONY: mod5_3_1_2_check_after_hot_fix
+mod5_3_1_2_check_after_hot_fix:
+	RUSTFLAGS="-Awarnings" cargo  miri test --manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml && \
+	RUSTFLAGS="-Zsanitizer=address -Awarnings" cargo +nightly test  \
+			--target x86_64-unknown-linux-gnu \
+			--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml && \
+	RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer  -Awarnings" cargo +nightly run --bin demo \
+			--target x86_64-unknown-linux-gnu \
+			--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml 2>&1 \
+		| tee artifacts/generated/mod5_3_1_2_check_after_hot_fix.log
+
 
 
 PHONY: mod5_run_sanitize_sums_even_numbers
