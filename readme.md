@@ -159,7 +159,7 @@ MIRIFLAGS=-Zmiri-backtrace=full cargo  miri test --manifest-path ./repos/origin-
 Похоже мы вызываем Box::into_raw, но не освобождаем память через Box::from_raw.
 ## 2.4 Фикс `leak_buffer`
 Применим правку утечки на базе ветки `module_5/origin-of-broken-app-with-hot-fix`, скопировав решение в ветку `module_5/broken-app-2.4-fix-leak-buffer-after-miri`.
-<!-- git submodule add -b module_5/origin-of-broken-app-with-hot-fix git@github.com:svirsky-am/rrr-homeworks.git module_5/broken-app-2.4-fix-leak-buffer-after-miri -->
+<!-- git submodule add -b module_5/origin-of-broken-app-with-hot-fix git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-2.4-fix-leak-buffer-after-miri -->
 Правка будет заключаться в освобождении бокса:
 ```rs
 pub fn leak_buffer(input: &[u8]) -> usize {
@@ -199,7 +199,7 @@ RUSTFLAGS="-Zsanitizer=address" cargo +nightly test  \
 По логу `artifacts/committed/mod5_2_5_1_valgrind_asan_first_one.log` ошибок не замечено.
 ### 2.5.2 tsan
 ```sh
-RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer" cargo +nightly test \
+RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer --leak-check=full --show-leak-kinds=all" cargo +nightly test \
 	--target x86_64-unknown-linux-gnu \
 	--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml
 ```
@@ -224,11 +224,38 @@ WARNING: ThreadSanitizer: data race (pid=2359557)
   Thread T2 'counts_non_zero' (tid=2359560, running) created by main thread at:
     #0 pthread_create ??:? (in
 ```
+### 2.6. Анализ срабатываний tsan
+Мы наблюдаем проблему с двумя потоками двух разных сессий. Починка тестового фремворка выходит за рамки ДЗ, поэтому вместо фикса попробуем убедиться что пробелема не в `lib.rs`.
+Выполним аналогичный запуск для demo.rs:
+```sh
+RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer " cargo +nightly run --bin demo \
+	--target x86_64-unknown-linux-gnu \
+	--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml
+```
+В логе `artifacts/committed/mod5_2_6_1_prove_leak_is_not_by_demo.log` срабатываний tsan не обнаружено.
+Проверим через benches:
+```sh
+RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer " cargo +nightly bench --bench baseline \
+	--target x86_64-unknown-linux-gnu \
+	--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml
+```
+В логе `artifacts/committed/mod5_2_6_1_prove_leak_is_not_by_lib_rs___via_benches.log` срабатываний tsan не обнаружено.
 
-
+> Вывод:
+> Срабатывание tsan произошло в многопоточном тестовом фремворке. 
 # Шаг 3. Подтверждение корректности
-## 3.2 Добавление регрисионных тестов
-### Для `leak_buffer`
+## 3.1 Добавление регрисионных тестов
+Правки функций `sum_even` и `average_positive` покрываются имеющимися unit-тестами.
+
+### 3.1.1 Для `leak_buffer`
+
+На базе `broken-app-2.4-fix-leak-buffer-after-miri` создадим ветку `broken-app-3.1.1-add-unit-tests-for-leak-buff`
+<!-- git submodule add -b module_5/broken-app-2.4-fix-leak-buffer-after-miri git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-3.1.1-add-unit-tests-for-leak-buff -->
+
+и добавим тесты:
+
+
+
 ```rs
 #[test]
 fn test_leak_buffer_zero_vs_nonzero_distinction() {
