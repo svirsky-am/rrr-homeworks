@@ -251,11 +251,7 @@ RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer " cargo +nig
 
 На базе `broken-app-2.4-fix-leak-buffer-after-miri` создадим ветку `broken-app-3.1.1-add-unit-tests-for-leak-buff`
 <!-- git submodule add -b module_5/broken-app-2.4-fix-leak-buffer-after-miri git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-3.1.1-add-unit-tests-for-leak-buff -->
-
 и добавим тесты:
-
-
-
 ```rs
 #[test]
 fn test_leak_buffer_zero_vs_nonzero_distinction() {
@@ -291,6 +287,12 @@ fn test_leak_buffer_all_non_zero() {
 
 ```
 
+Запускаем тесты:
+```sh
+cargo test \
+	--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml
+```
+В логе `artifacts/committed/broken-app-3.1.1-add-unit-tests-for-leak-buff .log` срабатываний tsan не обнаружено.
 
 ## Шаг 6. Оптимизация
 ## 6.1 Микро оптимизация `sum_even`

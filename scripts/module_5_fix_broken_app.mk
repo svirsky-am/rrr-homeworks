@@ -32,30 +32,36 @@ mod5_2_4_fix_after_miri:
 PHONY: mod5_2_5_1_valgrind_asan
 mod5_2_5_1_valgrind_asan:
 	RUSTFLAGS="-Zsanitizer=address" cargo +nightly test  \
-	--target x86_64-unknown-linux-gnu \
-	--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml 2>&1 | tee artifacts/generated/mod5_2_5_1_valgrind_asan_first_one.log
+		--target x86_64-unknown-linux-gnu \
+		--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml 2>&1 | tee artifacts/generated/mod5_2_5_1_valgrind_asan_first_one.log
 
 PHONY: mod5_2_5_2_valgrind_tsan
 mod5_2_5_2_valgrind_tsan:
 	RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer " cargo +nightly test \
-	--target x86_64-unknown-linux-gnu \
-	--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml  2>&1 \
-	| tee artifacts/generated/mod5_2_5_2_valgrind_tsan_first_one.log 
+		--target x86_64-unknown-linux-gnu \
+		--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml  2>&1 \
+		| tee artifacts/generated/mod5_2_5_2_valgrind_tsan_first_one.log 
 
 
 PHONY: mod5_2_6_1_prove_leak_is_not_by_demo
 mod5_2_6_1_prove_leak_is_not_by_demo:
 	RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer " cargo +nightly run --bin demo \
-	--target x86_64-unknown-linux-gnu \
-	--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml  2>&1 \
-	| tee artifacts/generated/mod5_2_6_1_prove_leak_is_not_by_demo.log
+		--target x86_64-unknown-linux-gnu \
+		--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml  2>&1 \
+		| tee artifacts/generated/mod5_2_6_1_prove_leak_is_not_by_demo.log
 
 PHONY: mod5_2_6_1_prove_leak_is_not_by_lib_rs___via_benches
 mod5_2_6_1_prove_leak_is_not_by_lib_rs___via_benches:
 	RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer " cargo +nightly bench --bench baseline \
-	--target x86_64-unknown-linux-gnu \
-	--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml  2>&1 \
-	| tee artifacts/generated/mod5_2_6_1_prove_leak_is_not_by_lib_rs___via_benches.log 
+		--target x86_64-unknown-linux-gnu \
+		--manifest-path ./repos/broken-app-2.4-fix-leak-buffer-after-miri/Cargo.toml  2>&1 \
+		| tee artifacts/generated/mod5_2_6_1_prove_leak_is_not_by_lib_rs___via_benches.log 
+
+PHONY: mod5_3_1_1_add_unit_tests_for_leak_buff
+mod5_3_1_1_add_unit_tests_for_leak_buff:
+	cargo test \
+		--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml 2>&1 \
+		| tee artifacts/generated/broken-app-3.1.1-add-unit-tests-for-leak-buff.log
 
 
 
