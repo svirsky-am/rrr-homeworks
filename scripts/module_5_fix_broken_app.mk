@@ -79,8 +79,22 @@ PHONY: mod5_3.3-extra-tests-for-normalyze-and-threat
 mod5_3.3-extra-tests-for-normalyze-and-threat:
 	cargo test \
 		--manifest-path ./repos/broken-app-3.3-extra-tests-for-normalyze-and-threat/Cargo.toml 2>&1 \
-		| tee artifacts/generated/module_5/broken-app-3.3-extra-tests-for-normalyze-and-threat.log
+		| tee artifacts/generated/broken-app-3.3-extra-tests-for-normalyze-and-threat.log
 
+PHONY: mod5_3.3-run-bin-demo_for_threats
+mod5_3.3-run-bin-demo_for_threats:
+	cargo +nightly run --bin demo_for_threats \
+		--target x86_64-unknown-linux-gnu \
+		--manifest-path ./repos/broken-app-3.3-extra-tests-for-normalyze-and-threat/Cargo.toml 
+
+PHONY: mod5_3.3.2-run-bin-demo_for_threats-via-tsan
+mod5_3.3.2-run-bin-demo_for_threats-via-tsan:
+	RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer  -Awarnings" \
+		cargo +nightly run --bin demo_for_threats \
+		--target x86_64-unknown-linux-gnu \
+		--manifest-path ./repos/broken-app-3.3-extra-tests-for-normalyze-and-threat/Cargo.toml 2>&1 \
+		| tee artifacts/generated/broken-app-3.3-run-bin-demo_for_threats-via-tsan.log
+		
 
 PHONY: mod5_4_1_profile_for_demo_bin
 mod5_4_1_profile_for_demo_bin:

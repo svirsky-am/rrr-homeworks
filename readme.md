@@ -1,3 +1,10 @@
+# 0. Допущения
+
+- для `race_increment`, read_after_sleep нет юниттестов , а reset_counter даже не описан не reference_app
+- в тесте normalyze нет кейса на проверку `\n` `\t`. Поэтому правка выполнена чуть позже 
+- в предоставленных broken_app  и reference_app не работают тесты criterion.
+- нагядно оформить сбор логов только за счет коммитов и bash скриптовв оказалось тяжело. Был применен git submodules с отображением коммитов на каждом шаге ДЗ.
+
 # Шаг 1. Ознакомление
 ## 1.1 Клонируйте оба проекта (broken-app, reference-app).
 Сделаем доступными исходники для полученися логов и отчетов с помощью git submodules:
@@ -337,9 +344,66 @@ pub fn normalize(input: &str) -> String {
 Проверка:
 ```sh 
 cargo test \
-		--manifest-path ./repos/broken-app-3.3-extra-tests-for-normalyze-and-threat/Cargo.toml
+		--manifest-path ./repos/broken-app-3.3-extra-tests-for-normalyze-and-threat/Cargo.toml -- normalize_simple
 
 ```
+
+## 3.3.2 Тесты для функций  `race_increment`, `read_after_sleep` и `reset_counter`
+
+Портируем имеющийся тест `race_increment_is_correct` из reference_app и запустим его:
+```sh 
+cargo test \
+		--manifest-path ./repos/broken-app-3.3-extra-tests-for-normalyze-and-threat/Cargo.toml -- race_increment_is_correct
+```
+и не увидим гонки
+> running 1 test
+> test race_increment_is_correct ... ok
+
+Для запуска tsan оформим тестовое приложение `demo_for_threats`, использующее эти функции, т.к тестовый фреймворк имеет свои ошибки при запуске tsan.
+```rs
+use broken_app::{concurrency};
+
+fn main() {
+
+    let total = concurrency::race_increment(1_000, 4);
+    println!("total: {:?}", &total);
+    concurrency::read_after_sleep();
+    concurrency::reset_counter();
+    println!("total: {:?}", &total);
+    
+}
+```
+Запусти несколько раз:
+
+```sh
+cargo +nightly run --bin demo_for_threats \
+		--target x86_64-unknown-linux-gnu \
+		--manifest-path ./repos/broken-app-3.3-extra-tests-for-normalyze-and-threat/Cargo.toml 
+```
+Каждый раз получаем рандомные значения 
+> total: 3131
+> total: 3131
+
+> total: 3856
+> total: 3856
+
+Запустим tsan на этом приложении:
+```sh
+RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer  -Awarnings" \
+    cargo +nightly run --bin demo_for_threats \
+    --target x86_64-unknown-linux-gnu \
+    --manifest-path ./repos/broken-app-3.3-extra-tests-for-normalyze-and-threat/Cargo.toml 
+```
+Получаем срабатывание:
+```
+WARNING: ThreadSanitizer: data race (pid=3681059)
+  Read of size 8 at 0x5555565cf750 by thread T2:
+    #0 broken_app::concurrency::race_increment::{closure#0} 
+```
+Подробности в логе `artifacts/committed/broken-app-3.3-run-bin-demo_for_threats-via-tsan.log`.
+Коммитимся и фиксим.
+
+
 
 
 # Шаг 4. Поиск узких мест
