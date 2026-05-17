@@ -412,22 +412,88 @@ git checkout -b module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats
 git push --set-upstream origin module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats
 popd
  -->
+
+
+Применим атомарные функции:
+```rs
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::thread;
+use std::time::Duration;
+
+// Заменяем unsafe static mut на атомарную переменную
+static COUNTER: AtomicU64 = AtomicU64::new(0);
+
+/// Безопасный инкремент через несколько потоков.
+/// Использует атомарные операции — нет data race.
+pub fn race_increment(iterations: usize, threads: usize) -> u64 {
+    // Сбрасываем счётчик перед началом (атомарно)
+    COUNTER.store(0, Ordering::Relaxed);
+    
+    let mut handles = Vec::new();
+    for _ in 0..threads {
+        handles.push(thread::spawn(move || {
+            for _ in 0..iterations {
+                // Атомарное увеличение на 1
+                // Relaxed достаточно для счётчика, если не нужна синхронизация с другими данными
+                COUNTER.fetch_add(1, Ordering::Relaxed);
+            }
+        }));
+    }
+    for h in handles {
+        let _ = h.join();
+    }
+    // Атомарное чтение финального значения
+    COUNTER.load(Ordering::Relaxed)
+}
+
+/// Чтение счётчика после небольшой задержки.
+/// Теперь безопасно: атомарная загрузка.
+pub fn read_after_sleep() -> u64 {
+    thread::sleep(Duration::from_millis(10));
+    COUNTER.load(Ordering::Relaxed)
+}
+
+/// Сброс счётчика — теперь атомарный.
+pub fn reset_counter() {
+    COUNTER.store(0, Ordering::Relaxed);
+}
+```
+Немного модифицировав приложение, запусти без инструментации:
 ```sh
 cargo +nightly run --bin demo_for_threats \
 		--target x86_64-unknown-linux-gnu \
 		--manifest-path ./repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats/Cargo.toml 
 ```
+Все работает как заяввлено в незваниях функций:
+```
+Запуск race_increment(1_000, 4)...
+После инкремента: total = 4000
+После sleep: counter = 4000
+После reset: counter = 0
+Все проверки пройдены!
+```
+Теперь запустим инструментальную сборку tsan:
 
-
-
-
-
+```rs
+RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer  -Awarnings" cargo +nightly run --bin demo_for_threats \
+		--target x86_64-unknown-linux-gnu \
+		--manifest-path ./repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats/Cargo.toml 
+```
+Теперь ошибок tsan нет. Лог: `artifacts/committed/broken-app-3.3.3-fix-tsan-for-demo-for-threats.log`.
 
 
 # Шаг 4. Поиск узких мест
 ## 4.1 Построение flamegraph для demo
-На базе ветки с хотфиксами   оригинального 
 
+На базе ветки `module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats` с хотфиксами оригинального `broken-app` построим несколько flamegraph , для анализа узких мест.
+
+<!--
+git submodule add -b module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-4.1-get-flamegraph
+pushd repos/broken-app-4.1-get-flamegraph
+git checkout -b module_5/broken-app-4.1-get-flamegraph
+git push --set-upstream origin module_5/broken-app-4.1-get-flamegraph
+popd
+ -->
 
 
 # Шаг 5. Бенчмарки до оптимизации
