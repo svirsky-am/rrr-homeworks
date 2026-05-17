@@ -21,4 +21,8 @@
 [submodule "repos/broken-app-3.1.1-add-unit-tests-for-leak-buff"]
 	path = repos/broken-app-3.1.1-add-unit-tests-for-leak-buff
 	url = git@github.com:svirsky-am/rrr-homeworks.git
-	branch = module_5/broken-app-2.4-fix-leak-buffer-after-miri
+	branch = module_5/broken-app-3.1.1-add-unit-tests-for-leak-buff
+[submodule "repos/broken-app-3.3-extra-tests-for-normalyze-and-threat"]
+	path = repos/broken-app-3.3-extra-tests-for-normalyze-and-threat
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/broken-app-3.3-extra-tests-for-normalyze-and-threat'

@@ -293,19 +293,60 @@ cargo test \
 	--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml
 ```
 В логе `artifacts/committed/broken-app-3.1.1-add-unit-tests-for-leak-buff.log` срабатываний tsan не обнаружено.
+###  3.1.2 Фикс теста 
 
-### 3.2 Контрольная проверка фиксов
+
+## 3.2 Контрольная проверка фиксов
 Запустим имеющиеся тесты на ветке `broken-app-3.1.1-add-unit-tests-for-leak-buff`:
 ```sh
+# miri
 cargo  miri test --manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml
+# asan
 RUSTFLAGS="-Zsanitizer=address" cargo +nightly test  \
 		--target x86_64-unknown-linux-gnu \
 		--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml
+# tsan
 RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer " cargo +nightly run --bin demo \
 		--target x86_64-unknown-linux-gnu \
 		--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml
 ```
 Результат в `artifacts/committed/mod5_3_1_2_check_after_hot_fix.log`
+## 3.3 Дополнение имеющихся unit-тестов
+Анализируя тесты , можно заметить что: 
+- тест `normalize_simple` для функции `normalize` не покрывает кейсов , когда тестовая строка содержит в себе табуляции `\t` и переносы строк `\n`;
+- нет тестов для `race_increment`.  
+- нет тестов для `read_after_sleep` 
+- нет тестов для `reset_counter`.
+Сделаем правки на ветке `module_5/broken-app-3.3-extra-tests-for-normalyze-and-threat`, созданной на базе ветки `broken-app-3.1.1-add-unit-tests-for-leak-buff`
+<!-- git submodule add -b module_5/broken-app-3.1.1-add-unit-tests-for-leak-buff git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-3.3-extra-tests-for-normalyze-and-threat -->
+## 3.3.1 Тест `normalize_simple`
+Для проверки `normalize` в соответсвии с описанием к функции нужно добавить проверяемые символы в проверочную строку:
+```rs
+
+```
+
+
+
+
+# Шаг 4. Поиск узких мест
+## 4.1 Построение flamegraph для demo
+На базе ветки с хотфиксами   оригинального 
+
+
+
+# Шаг 5. Бенчмарки до оптимизации
+## 5.1 Настройка бенчмарков для broken_app и reference_app
+### 5.1.1. Праввка вызова criterion в `broken_app`
+Оригинальном broken-app с hot-фиксами не работает бенчмарк criterion
+```sh
+cargo bench  --bench criterion  \
+		--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml
+```
+
+
+Выполним профилирование после горячих фиксов на ветке `broken-app-3.1.1-add-unit-tests-for-leak-buff`, полученной на базе ветки `broken-app-4.1.1-fix-criterion`.
+<!-- git submodule add -b module_5/broken-app-3.1.1-add-unit-tests-for-leak-buff git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-5.1.1-fix-criterion -->
+
 
 
 

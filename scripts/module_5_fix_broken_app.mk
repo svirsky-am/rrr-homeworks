@@ -75,6 +75,36 @@ mod5_3_1_2_check_after_hot_fix:
 		| tee artifacts/generated/mod5_3_1_2_check_after_hot_fix.log
 
 
+PHONY: mod5_3_3_1_broken-app-3.3-extra-tests-for-normalyze-and-race-increment
+mod5_3_1_1_broken-app-3.3-extra-tests-for-normalyze-and-race-increment:
+	cargo test \
+		--manifest-path ./repos/broken-app-3.3-extra-tests-for-normalyze-and-race-increment/Cargo.toml 2>&1 \
+		| tee artifacts/generated/broken-app-3.3-extra-tests-for-normalyze-and-race-increment.log
+
+
+PHONY: mod5_4_1_profile_for_demo_bin
+mod5_4_1_profile_for_demo_bin:
+RUSTFLAGS="-C force-frame-pointers=yes" cargo flamegraph -F 4000 \
+    --manifest-path ./repos/reference-app/Cargo.toml \
+    --release --root --bench baseline \
+    --output artifacts/generated/reference-app-flamegraph-test-integration.svg
+
+PHONY: mod5_4_1_profile_for_bench
+RUSTFLAGS="-C force-frame-pointers=yes" cargo flamegraph -F 4000 \
+    --manifest-path ./repos/reference-app/Cargo.toml \
+    --release --root --bench baseline \
+    --output artifacts/generated/reference-app-flamegraph-test-integration.svg
+
+# 	RUSTFLAGS="-Awarnings" cargo  miri test --manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml && \
+# 	RUSTFLAGS="-Zsanitizer=address -Awarnings" cargo +nightly test  \
+# 			--target x86_64-unknown-linux-gnu \
+# 			--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml && \
+# 	RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer  -Awarnings" cargo +nightly run --bin demo \
+# 			--target x86_64-unknown-linux-gnu \
+# 			--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml 2>&1 \
+# 		| tee artifacts/generated/mod5_3_1_2_check_after_hot_fix.log
+
+
 
 PHONY: mod5_run_sanitize_sums_even_numbers
 mod5_run_sanitize_sums_even_numbers:
