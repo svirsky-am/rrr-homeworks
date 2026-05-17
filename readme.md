@@ -484,8 +484,47 @@ RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer  -Awarnings"
 
 # Шаг 4. Поиск узких мест
 ## 4.1 Построение flamegraph для demo
+Для начала попробуем постороить flamegraph для приложения `demo`:
+```sh
+RUSTFLAGS="-C force-frame-pointers=yes " cargo build --release \
+    --manifest-path ./repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats/Cargo.toml
+RUSTFLAGS="-C force-frame-pointers=yes" cargo flamegraph -F 999 \
+    --release --root --bin demo \
+    --manifest-path ./repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats/Cargo.toml  \
+    --output artifacts/generated/4.1_flamegraph_bin_demo.svg
+```
+На графике мы не видим интересующих нас функций, т.к. программа заканчивается очень бытсро.
+![HOT_segments](artifacts/committed/4.1_flamegraph_bin_demo.svg)
+Если мы добавим цикл, то скорее всего увидим системные вызовы связанные с выводом данных в sdtout.
+Поэтому поробуем построить flamegraph для benches:
 
-На базе ветки `module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats` с хотфиксами оригинального `broken-app` построим несколько flamegraph , для анализа узких мест.
+```sh
+RUSTFLAGS="-C force-frame-pointers=yes" cargo flamegraph -F 400 \
+    --release --root --bench baseline \
+    --manifest-path ./repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats/Cargo.toml  \
+    --output artifacts/generated/4.1_flamegraph_benches.svg
+```
+Тут мы видим два сегмента, которые можно немного ускорить. Выполним это в разделе с оптимизациями.
+![HOT_segments](artifacts/committed/Explane_4.1._benches.png)
+
+
+
+
+
+
+
+# Шаг 5. Бенчмарки до оптимизации
+
+
+## 5.1 Настройка бенчмарков для broken_app и reference_app
+### 5.1.1. Праввка вызова criterion в `broken_app`
+На оригинальном broken-app с hot-фиксами не работает бенчмарк criterion
+```sh
+cargo bench  --bench criterion  \
+		--manifest-path ./repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats/Cargo.toml
+```
+
+На базе ветки `module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats` с хотфиксами оригинального `broken-app` подготовим ветку для сбора бенчмарков.
 
 <!--
 git submodule add -b module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-4.1-get-flamegraph
@@ -494,16 +533,6 @@ git checkout -b module_5/broken-app-4.1-get-flamegraph
 git push --set-upstream origin module_5/broken-app-4.1-get-flamegraph
 popd
  -->
-
-
-# Шаг 5. Бенчмарки до оптимизации
-## 5.1 Настройка бенчмарков для broken_app и reference_app
-### 5.1.1. Праввка вызова criterion в `broken_app`
-Оригинальном broken-app с hot-фиксами не работает бенчмарк criterion
-```sh
-cargo bench  --bench criterion  \
-		--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml
-```
 
 
 Выполним профилирование после горячих фиксов на ветке `broken-app-3.1.1-add-unit-tests-for-leak-buff`, полученной на базе ветки `broken-app-4.1.1-fix-criterion`.
