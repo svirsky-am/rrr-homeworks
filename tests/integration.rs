@@ -61,7 +61,7 @@ fn fib_small_numbers() {
 
 #[test]
 fn normalize_simple() {
-    assert_eq!(normalize(" Hello World "), "helloworld");
+    assert_eq!(normalize(" H  e\n\nllo                       Wo\t\t\t\t\t\t\t\t\t\t\trld "), "helloworld");
 }
 
 #[test]

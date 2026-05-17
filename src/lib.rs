@@ -36,8 +36,10 @@ pub fn leak_buffer(input: &[u8]) -> usize {
 
 /// Небрежная нормализация строки: удаляем пробелы и приводим к нижнему регистру,
 /// но игнорируем повторяющиеся пробелы/табуляции внутри текста.
+/// 
+/// hot fix
 pub fn normalize(input: &str) -> String {
-    input.replace(' ', "").to_lowercase()
+    input.replace(' ', "").replace('\n', "").replace('\t', "").to_lowercase()
 }
 
 /// с hot fix
