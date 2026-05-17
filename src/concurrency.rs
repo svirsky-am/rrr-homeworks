@@ -1,35 +1,41 @@
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::Duration;
 
-static mut COUNTER: u64 = 0;
+// Заменяем unsafe static mut на атомарную переменную
+static COUNTER: AtomicU64 = AtomicU64::new(0);
 
-/// Небезопасный инкремент через несколько потоков.
-/// Использует global static mut без синхронизации — data race.
+/// Безопасный инкремент через несколько потоков.
+/// Использует атомарные операции — нет data race.
 pub fn race_increment(iterations: usize, threads: usize) -> u64 {
-    unsafe { COUNTER = 0; }
+    // Сбрасываем счётчик перед началом (атомарно)
+    COUNTER.store(0, Ordering::Relaxed);
+    
     let mut handles = Vec::new();
     for _ in 0..threads {
         handles.push(thread::spawn(move || {
             for _ in 0..iterations {
-                unsafe {
-                    COUNTER += 1;
-                }
+                // Атомарное увеличение на 1
+                // Relaxed достаточно для счётчика, если не нужна синхронизация с другими данными
+                COUNTER.fetch_add(1, Ordering::Relaxed);
             }
         }));
     }
     for h in handles {
         let _ = h.join();
     }
-    unsafe { COUNTER }
+    // Атомарное чтение финального значения
+    COUNTER.load(Ordering::Relaxed)
 }
 
-/// Плохая «синхронизация» — просто sleep, возвращает потенциально устаревшее значение.
+/// Чтение счётчика после небольшой задержки.
+/// Теперь безопасно: атомарная загрузка.
 pub fn read_after_sleep() -> u64 {
     thread::sleep(Duration::from_millis(10));
-    unsafe { COUNTER }
+    COUNTER.load(Ordering::Relaxed)
 }
 
-/// Сброс счётчика (также небезопасен, без синхронизации).
+/// Сброс счётчика — теперь атомарный.
 pub fn reset_counter() {
-    unsafe { COUNTER = 0; }
+    COUNTER.store(0, Ordering::Relaxed);
 }
