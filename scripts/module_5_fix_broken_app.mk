@@ -75,11 +75,11 @@ mod5_3_1_2_check_after_hot_fix:
 		| tee artifacts/generated/mod5_3_1_2_check_after_hot_fix.log
 
 
-PHONY: mod5_3_3_1_broken-app-3.3-extra-tests-for-normalyze-and-race-increment
-mod5_3_1_1_broken-app-3.3-extra-tests-for-normalyze-and-race-increment:
+PHONY: mod5_3.3-extra-tests-for-normalyze-and-threat
+mod5_3.3-extra-tests-for-normalyze-and-threat:
 	cargo test \
-		--manifest-path ./repos/broken-app-3.3-extra-tests-for-normalyze-and-race-increment/Cargo.toml 2>&1 \
-		| tee artifacts/generated/broken-app-3.3-extra-tests-for-normalyze-and-race-increment.log
+		--manifest-path ./repos/broken-app-3.3-extra-tests-for-normalyze-and-threat/Cargo.toml 2>&1 \
+		| tee artifacts/generated/module_5/broken-app-3.3-extra-tests-for-normalyze-and-threat.log
 
 
 PHONY: mod5_4_1_profile_for_demo_bin

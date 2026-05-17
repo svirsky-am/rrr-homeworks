@@ -322,10 +322,24 @@ RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer " cargo +nig
 ## 3.3.1 Тест `normalize_simple`
 Для проверки `normalize` в соответсвии с описанием к функции нужно добавить проверяемые символы в проверочную строку:
 ```rs
-
+#[test]
+fn normalize_simple() {
+    assert_eq!(normalize(" H  e\n\nllo                       Wo\t\t\t\t\t\t\t\t\t\t\trld "), "helloworld");
+}
+```
+и сразу применим фикс к функции:
+```rs
+pub fn normalize(input: &str) -> String {
+    input.replace(' ', "").replace('\n', "").replace('\t', "").to_lowercase()
+}
 ```
 
+Проверка:
+```sh 
+cargo test \
+		--manifest-path ./repos/broken-app-3.3-extra-tests-for-normalyze-and-threat/Cargo.toml
 
+```
 
 
 # Шаг 4. Поиск узких мест
