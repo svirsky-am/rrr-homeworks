@@ -403,6 +403,24 @@ WARNING: ThreadSanitizer: data race (pid=3681059)
 Подробности в логе `artifacts/committed/broken-app-3.3-run-bin-demo_for_threats-via-tsan.log`.
 Коммитимся и фиксим.
 
+## 3.3.3 Фиксы для функций  `race_increment`, `read_after_sleep` и `reset_counter` и приложения `demo_for_threats`
+Фикс сделаем на базе ветки `module_5/broken-app-3.3-extra-tests-for-normalyze-and-threat`
+<!--
+git submodule add -b module_5/broken-app-3.3-extra-tests-for-normalyze-and-threat git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats
+pushd repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats
+git checkout -b module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats
+git push --set-upstream origin module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats
+popd
+ -->
+```sh
+cargo +nightly run --bin demo_for_threats \
+		--target x86_64-unknown-linux-gnu \
+		--manifest-path ./repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats/Cargo.toml 
+```
+
+
+
+
 
 
 
