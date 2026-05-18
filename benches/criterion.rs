@@ -2,9 +2,9 @@ use broken_app::{algo, sum_even,
     sum_even_new_optimized,
     sum_even_with_hot_fix,
     sum_even_by_reference_app,
-    normalize, 
-    // normalize_by_reference_app,  
-    // normalize_faster_new_alt, 
+    normalize_with_hot_fix, 
+    normalize_by_reference_app,  
+    normalize_new_optimized, 
     average_positive_with_hot_fix, 
     average_positive_by_reference_app,
     average_positive_new_optimized,
@@ -62,27 +62,24 @@ fn bench_normalize_with_hot_fix(c: &mut Criterion) {
     // let data: Vec<u64> = (0..5_000).flat_map(|n| [n, n]).collect();
     c.bench_function("bench_normalize_with_hot_fix", |b| {
 
-        b.iter(|| normalize(black_box(&STRING_TO_NORMALIZE)));
+        b.iter(|| normalize_with_hot_fix(black_box(&STRING_TO_NORMALIZE)));
 
     });
 }
 
 
-// fn bench_normalize_by_reference_app(c: &mut Criterion) {
-//     // let data: Vec<u64> = (0..5_000).flat_map(|n| [n, n]).collect();
-//     c.bench_function("normalize_by_reference_app", |b| {
-
-//         b.iter(|| normalize_by_reference_app(black_box(&STRING_TO_NORMALIZE)));
-
-//     });
-// }
-
-// fn bench_normalize_faster_new_alt(c: &mut Criterion) {
-//     // let data: Vec<u64> = (0..5_000).flat_map(|n| [n, n]).collect();
-//     c.bench_function("normalize_faster_new_alt", |b| {
-//         b.iter(|| normalize_faster_new_alt(black_box(&STRING_TO_NORMALIZE)));
-//     });
-// }
+fn bench_normalize_by_reference_app(c: &mut Criterion) {
+    // let data: Vec<u64> = (0..5_000).flat_map(|n| [n, n]).collect();
+    c.bench_function("bench_normalize_by_reference_app", |b| {
+        b.iter(|| normalize_by_reference_app(black_box(&STRING_TO_NORMALIZE)));
+    });
+}
+fn bench_normalize_new_optimized(c: &mut Criterion) {
+    // let data: Vec<u64> = (0..5_000).flat_map(|n| [n, n]).collect();
+    c.bench_function("bench_normalize_new_optimized", |b| {
+        b.iter(|| normalize_new_optimized(black_box(&STRING_TO_NORMALIZE)));
+    });
+}
 
 fn bench_average_positive_with_hot_fix(c: &mut Criterion) {
     let nums = [-5, 5, 15, -5, 5, 15,-5, 5, 15,-5, 5, 15,-5, 5, 15-5, 5, 15];
@@ -121,6 +118,11 @@ criterion_group!(benches_average_positive,
                     bench_average_positive_new_optimized
 );
 
+criterion_group!(benches_normalize,
+                    bench_normalize_with_hot_fix,
+                    bench_normalize_by_reference_app,
+                    bench_normalize_new_optimized
+);
 
 
 criterion_group!(benches, bench_fib, bench_dedup, 
@@ -129,4 +131,7 @@ criterion_group!(benches, bench_fib, bench_dedup,
     //bench_average_positive,
     // bench_average_positive_by_reference_app
 );
-criterion_main!(benches_sum_even, benches_average_positive, benches);
+criterion_main!(benches_sum_even, 
+                benches_average_positive,
+                benches_normalize,
+                benches);

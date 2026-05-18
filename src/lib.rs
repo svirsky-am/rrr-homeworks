@@ -24,6 +24,7 @@ pub fn sum_even_new_optimized(values: &[i64]) -> i64 {
     acc
 }
 
+//  обертка для bin demo  и юнит тестов
 pub fn sum_even(values: &[i64]) -> i64 {
     sum_even_new_optimized(values)
 }
@@ -59,9 +60,44 @@ pub fn leak_buffer(input: &[u8]) -> usize {
 /// но игнорируем повторяющиеся пробелы/табуляции внутри текста.
 /// 
 /// hot fix
-pub fn normalize(input: &str) -> String {
+pub fn normalize_with_hot_fix(input: &str) -> String {
     input.replace(' ', "").replace('\n', "").replace('\t', "").to_lowercase()
 }
+
+
+pub fn normalize_by_reference_app(input: &str) -> String {
+    input
+        .split_whitespace()
+        .collect::<String>()
+        .to_lowercase()
+} 
+
+/// b | 32 преобразует A..Z -> a..z.
+///  Кириллица, эмодзи и другие UTF-8 символы останутся нетронутыми (их байты не попадают в диапазоны b' ', b'A'..=b'Z').
+///
+pub fn normalize_new_optimized(input: &str) -> String {
+    let mut out = Vec::with_capacity(input.len());
+    for &b in input.as_bytes() {
+        match b {
+            b' ' | b'\t' | b'\n' => continue,
+            // b | 32 эквивалентен to_ascii_lowercase(), но компилятор оптимизирует это в одну инструкцию
+            b'A'..=b'Z' => out.push(b | 32),
+            _ => out.push(b),
+        }
+    }
+    // SAFETY: Мы модифицируем только ASCII-байты (0x00..0x7F) и не нарушаем 
+    // структуру многобайтовых UTF-8 последовательностей. Валидность UTF-8 гарантирована.
+    unsafe { String::from_utf8_unchecked(out) }
+}
+
+
+//  обертка для bin demo  и юнит тестов
+pub fn normalize(input: &str) -> String {
+   normalize_new_optimized(input)
+}
+
+
+
 
 /// с hot fix
 /// 
