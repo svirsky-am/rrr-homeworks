@@ -507,21 +507,10 @@ RUSTFLAGS="-C force-frame-pointers=yes" cargo flamegraph -F 400 \
 ```
 Тут мы видим два сегмента, которые можно немного ускорить. Выполним это в разделе с оптимизациями.
 ![HOT_segments](artifacts/committed/Explane_4.1._benches.png)
-
-
-
-
-
-
-
 # Шаг 5. Бенчмарки до оптимизации
-
-
 ## 5.1 Настройка бенчмарков для broken_app и reference_app
 ### 5.1.1. Праввка вызова criterion в `broken_app`
 На оригинальном broken-app с hot-фиксами не работает бенчмарк criterion.
-
-
 На базе ветки `module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats` с хотфиксами оригинального `broken-app` подготовим ветку для сбора бенчмарков.
 
 <!--
@@ -556,7 +545,7 @@ sum_even_broken         time:   [146.57 µs 150.48 µs 154.83 µs]
 Подробности в логе `artifacts/committed/broken-app-5.1.1-fixup-criterion.log`.
 Для честности измерений старые реализации с "горячими фиксами" hot fix, реализации `reference-app` и новые оптимизации оформлены в одной библиотеке. Замеры будут вызываться в рамках одной сессии criterion.
 
-## Шаг 6. Оптимизация
+# Шаг 6. Оптимизация
 Оптимизации будут выполнены на ветке `module_5/broken-app-6-optimized` на базе ветки `module_5/broken-app-5.1-fixup-criterion-for-broken-app`
 <!--
 git submodule add -b module_5/broken-app-5.1-fixup-criterion-for-broken-app git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-6-optimized
@@ -567,23 +556,45 @@ popd
  -->
 
 ## 6.1 Микро оптимизация `sum_even`
-
-
-Самое быстрое решение (похоже за счет оптимизаций компилдятора) ~546ns против   : ~164.27µs в reference app
-```rs
-let mut acc: i64 = 0;
-for &v in values {
-    if (v & 1) == 0 { acc += v; }
-}
-acc
-```
-Получение пруфов:
 ```sh
-scripts/get-flame-and-banches-by-broken-app.sh
-scripts/get-flame-and-banches-by-reference-app.sh
+RUSTFLAGS="-C force-frame-pointers=yes" cargo flamegraph -F 400 \
+    --release --root --bench baseline_sum_even  \
+    --manifest-path ./repos/broken-app-6-optimized/Cargo.toml  \
+    --output artifacts/generated/6.1_flamegraph_benches_baseline_sum_even.svg 
 ```
+![](artifacts/committed/6.1_flamegraph_benches_hot_fix_sum_even.svg)
+Наблюдаем над функцией sum_even "asm sysvec apic timer interupt".
+Предполагаем что это полка возникла из-за `unsave`.
+Перепишем  `sum_even` применив срезы и буферизацию без `unsave`.
+```rs
+pub fn sum_even(values: &[i64]) -> i64 {
+    let mut acc: i64 = 0;
+    for &v in values {
+        if (v & 1) == 0 { acc += v; }
+    }
+    acc
+}
+```
+Сравним реализацию после hot-fix `sum_even_with_hot_fix`, оптимизированную по срезу `sum_even_new_optimized` и проверочную `sum_even_new_optimized` из reference-app:
 
-# 2. Правка обчног запуска cargo test
+
+```sh
+cargo bench --bench criterion  \
+    --manifest-path ./repos/broken-app-6-optimized/Cargo.toml -- sum_even
+```
+Получаем следующие результаты:
+```
+sum_even_new_optimized  time:   [4.7135 µs 4.7924 µs 4.8869 µs]
+sum_even_with_hot_fix   time:   [11.479 µs 11.707 µs 11.972 µs]
+sum_even_by_reference_app
+                        time:   [6.4911 µs 6.5906 µs 6.7170 µs]
+```
+Полный лог в `artifacts/committed/6_1_1_optimyze_sum_even_get_criterion.log`.
+Самое быстрое решение (похоже за счет оптимизаций компилдятора) -sum_even_new_optimized.
+Реализация из reference-app работает медленее, т.к. создается объект итератора и его клонирование.
+
+
+# 6.2. Оптимизация `average_positive`
 
 Перед запуском тестов miri и Valgrind починим обычный запуск unit-тестов.
 ```sh
@@ -622,9 +633,7 @@ cargo bench  --bench criterion
  ```
 
 
-
-
-# 3. Анализ fn normalize
+# 6.3. Оптимизация `normalize`
 
 Как таковой "небрежной нормализация строки" не замечено, т.к. она просто не полная, если нужно еще зачищать '\n' и `\t`. Двойные пробелы в текущей реализации удаляютс корректно .
 

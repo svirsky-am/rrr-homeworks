@@ -124,6 +124,14 @@ mod5_5_1_1_fixup_criterion:
 		--manifest-path ./repos/broken-app-5.1-fixup-criterion-for-broken-app/Cargo.toml 2>&1 \
 		| tee artifacts/generated/broken-app-5.1.1-fixup-criterion.log
 
+PHONY: mod5_6_1_1_optimyze_sum_even_get_criterion
+mod5_6_1_1_optimyze_sum_even_get_criterion:
+	RUSTFLAGS="-Awarnings" cargo bench  --bench criterion \
+		--manifest-path ./repos/broken-app-6-optimized/Cargo.toml -- sum_even 2>&1 \
+		| tee artifacts/generated/6_1_1_optimyze_sum_even_get_criterion.log
+
+
+
 # 	RUSTFLAGS="-Awarnings" cargo  miri test --manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml && \
 # 	RUSTFLAGS="-Zsanitizer=address -Awarnings" cargo +nightly test  \
 # 			--target x86_64-unknown-linux-gnu \

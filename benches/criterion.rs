@@ -60,6 +60,8 @@ fn bench_average_positive_by_reference_app(c: &mut Criterion) {
     });
 }
 
+criterion_group!(sum_even_group, bench_sum_even);
+
 criterion_group!(benches, bench_sum_even, bench_fib, bench_dedup, 
     bench_normalize_by_reference_app, 
     bench_normalize_faster_new_alt,
