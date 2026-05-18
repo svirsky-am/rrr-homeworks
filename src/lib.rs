@@ -65,13 +65,39 @@ pub fn normalize(input: &str) -> String {
 
 /// с hot fix
 /// 
-pub fn average_positive(values: &[i64]) -> f64 {
+pub fn average_positive_with_hot_fix(values: &[i64]) -> f64 {
     let sum: i64 = values.iter().filter(|&&x| x > 0).sum();
     if values.is_empty() {
         return 0.0;
     }
     sum as f64 / values.iter().filter(|&&x| x > 0).count() as f64
 }
+
+/// Корректное усреднение только положительных чисел. (реализация reference-app)
+pub fn average_positive_by_reference_app(values: &[i64]) -> f64 {
+    let positives: Vec<i64> = values.iter().copied().filter(|v| *v > 0).collect();
+    if positives.is_empty() {
+        return 0.0;
+    }
+    let sum: i64 = positives.iter().sum();
+    sum as f64 / positives.len() as f64
+}
+
+pub fn average_positive_new_optimized(values: &[i64]) -> f64 {
+    let mut acc: i64 = 0;
+    let mut delimiter  = 0;
+    for &v in values {
+        if (v) > 0 { acc += v; delimiter +=1}
+    }
+    acc as f64 / delimiter as f64
+}
+
+//  обертка для bin demo  и юнит тестов
+pub fn average_positive(values: &[i64]) -> f64 {
+    average_positive_new_optimized(values)
+}
+
+
 
 /// Use-after-free: возвращает значение после освобождения бокса.
 /// UB, проявится под ASan/Miri.

@@ -5,8 +5,11 @@ use broken_app::{algo, sum_even,
     normalize, 
     // normalize_by_reference_app,  
     // normalize_faster_new_alt, 
-    // average_positive_by_reference_app, 
-    average_positive};
+    average_positive_with_hot_fix, 
+    average_positive_by_reference_app,
+    average_positive_new_optimized,
+    average_positive
+};
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion, black_box};
 
 fn bench_sum_even(c: &mut Criterion) {
@@ -81,21 +84,30 @@ fn bench_normalize_with_hot_fix(c: &mut Criterion) {
 //     });
 // }
 
-fn bench_average_positive(c: &mut Criterion) {
+fn bench_average_positive_with_hot_fix(c: &mut Criterion) {
     let nums = [-5, 5, 15, -5, 5, 15,-5, 5, 15,-5, 5, 15,-5, 5, 15-5, 5, 15];
 
-    c.bench_function("bench_average_positive", |b| {
-        b.iter(|| average_positive(black_box(&nums)));
+    c.bench_function("bench_average_positive_with_hot_fix", |b| {
+        b.iter(|| average_positive_with_hot_fix(black_box(&nums)));
     });
 }
 
+fn bench_average_positive_by_reference_app(c: &mut Criterion) {
+    let nums = [-5, 5, 15, -5, 5, 15,-5, 5, 15,-5, 5, 15,-5, 5, 15-5, 5, 15];
 
-// fn bench_average_positive_by_reference_app(c: &mut Criterion) {
-//     let nums = [-5, 5, 15, -5, 5, 15,-5, 5, 15,-5, 5, 15,-5, 5, 15-5, 5, 15];
-//     c.bench_function("bench_average_positive_by_reference_app", |b| {
-//         b.iter(|| average_positive_by_reference_app(black_box(&nums)));
-//     });
-// }
+    c.bench_function("bench_average_positive_by_reference_app", |b| {
+        b.iter(|| average_positive_by_reference_app(black_box(&nums)));
+    });
+}
+
+fn bench_average_positive_new_optimized(c: &mut Criterion) {
+    let nums = [-5, 5, 15, -5, 5, 15,-5, 5, 15,-5, 5, 15,-5, 5, 15-5, 5, 15];
+
+    c.bench_function("bench_average_positive_new_optimized", |b| {
+        b.iter(|| average_positive_new_optimized(black_box(&nums)));
+    });
+}
+
 
 criterion_group!(benches_sum_even,
                     bench_sum_even_new_optimized,
@@ -103,11 +115,18 @@ criterion_group!(benches_sum_even,
                     bench_sum_even_by_reference_app
 );
 
+criterion_group!(benches_average_positive,
+                    bench_average_positive_with_hot_fix,
+                    bench_average_positive_by_reference_app,
+                    bench_average_positive_new_optimized
+);
+
+
 
 criterion_group!(benches, bench_fib, bench_dedup, 
     // bench_normalize_by_reference_app,
     // bench_normalize_faster_new_alt,
-    bench_average_positive,
+    //bench_average_positive,
     // bench_average_positive_by_reference_app
 );
-criterion_main!(benches_sum_even, benches);
+criterion_main!(benches_sum_even, benches_average_positive, benches);
