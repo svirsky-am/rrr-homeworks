@@ -592,24 +592,8 @@ sum_even_by_reference_app
 Полный лог в `artifacts/committed/6_1_1_optimyze_sum_even_get_criterion.log`.
 Самое быстрое решение (похоже за счет оптимизаций компилдятора) -sum_even_new_optimized.
 Реализация из reference-app работает медленее, т.к. создается объект итератора и его клонирование.
-
-
 # 6.2. Оптимизация `average_positive`
-
-Перед запуском тестов miri и Valgrind починим обычный запуск unit-тестов.
-```sh
-cargo test
-```
-имеем срабатывания асерта: 
-```
----- averages_only_positive stdout ----
-
-thread 'averages_only_positive' (1479910) panicked at tests/integration.rs:36:5:
-assertion failed: (broken_app::average_positive(&nums) - 10.0).abs() < f64::EPSILON
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-```
-
- Перепишем с использованием аккумуляторов без итераторов:
+Перепишем с использованием аккумуляторов без итераторов:
  ```rs 
 pub fn average_positive(values: &[i64]) -> f64 {
     let mut acc: i64 = 0;
@@ -620,17 +604,23 @@ pub fn average_positive(values: &[i64]) -> f64 {
     acc as f64 / delimiter as f64
 }
 ```
-Чтобы оценить эффективность , добавим реализацию из reference_app через итераторы, назвав функцию `average_positive_by_reference_app` и соответсвующий тесты criterion `bench_average_positive_by_reference_app` и `bench_average_positive`.  Теперь построим criterion :
+Чтобы оценить эффективность , добавим реализацию из reference_app через итераторы, назвав функцию `average_positive_by_reference_app`. Оптимизированную функцию назовем `average_positive_new_optimized`, а текущую реализацию оставим под названием `average_positive_with_hot_fix`. Соответсвующий тесты criterion назовем `bench_average_positive_new_optimized`, `bench_average_positive_by_reference_app` и `bench_average_positive_with_hot_fix`.  Теперь построим criterion :
 ```sh
-cargo bench  --bench criterion
+cargo bench --bench criterion  \
+    --manifest-path ./repos/broken-app-6-optimized/Cargo.toml -- verage_positive
 ``` 
 
+
  Получяаем ускорение x10 относительно `reference-app`:
- ```
- bench_average_positive  time:   [40.005 ns 40.636 ns 41.329 ns]
- bench_average_positive_by_reference_app
-                        time:   [636.34 ns 641.22 ns 647.17 ns]
- ```
+```
+bench_average_positive_with_hot_fix
+                        time:   [63.795 ns 66.198 ns 68.756 ns]
+bench_average_positive_by_reference_app
+                        time:   [454.24 ns 485.74 ns 525.09 ns]
+bench_average_positive_new_optimized
+                        time:   [38.747 ns 40.228 ns 42.084 ns]
+```
+Лог запуска: `artifacts/committed/6_2_optimyze_average_positive_get_criterion.log`
 
 
 # 6.3. Оптимизация `normalize`

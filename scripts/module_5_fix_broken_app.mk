@@ -131,6 +131,16 @@ mod5_6_1_1_optimyze_sum_even_get_criterion:
 		| tee artifacts/generated/6_1_1_optimyze_sum_even_get_criterion.log
 
 
+PHONY: mod5_6_2_optimyze_average_positive
+mod5_6_2_optimyze_average_positive:
+	RUSTFLAGS="-Awarnings" cargo bench  --bench criterion \
+		--manifest-path ./repos/broken-app-6-optimized/Cargo.toml -- average_positive 2>&1 \
+		| tee artifacts/generated/6_2_optimyze_average_positive_get_criterion.log
+
+
+
+
+
 
 # 	RUSTFLAGS="-Awarnings" cargo  miri test --manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml && \
 # 	RUSTFLAGS="-Zsanitizer=address -Awarnings" cargo +nightly test  \
