@@ -145,6 +145,18 @@ mod5_6_3_optimyze_normalize:
 		--manifest-path ./repos/broken-app-6-optimized/Cargo.toml -- normalize 2>&1 \
 		| tee artifacts/generated/6_3_optimyze_normalize_get_criterion.log
 
+PHONY: mod5_6_4_fast_fib
+mod5_6_4_fast_fib:
+	RUSTFLAGS="-Awarnings" cargo bench  --bench criterion \
+		--manifest-path ./repos/broken-app-6-optimized/Cargo.toml -- fib 2>&1 \
+		| tee artifacts/generated/6_4_fast_fib.log
+
+PHONY: mod5_6_4_fast_dedub
+mod5_6_4_fast_dedub:
+	RUSTFLAGS="-Awarnings" cargo bench  --bench criterion \
+		--manifest-path ./repos/broken-app-6-optimized/Cargo.toml -- dedup 2>&1 \
+		| tee artifacts/generated/6_4_fast_dedub.log
+
 
 
 # 	RUSTFLAGS="-Awarnings" cargo  miri test --manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml && \

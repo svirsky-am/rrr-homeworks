@@ -649,15 +649,12 @@ pub fn normalize(input: &str) -> String {
     // структуру многобайтовых UTF-8 последовательностей. Валидность UTF-8 гарантирована.
     unsafe { String::from_utf8_unchecked(out) }
 }
-
 ```
-
 Запустим бенчмарки:
 ```sh
 cargo bench --bench criterion  \
     --manifest-path ./repos/broken-app-6-optimized/Cargo.toml -- normalize
 ``` 
-
 В выводе наблюдаем уеличение скорости в 3-5 раз по сравнения с reference-app.
 ```sh
 ...
@@ -685,8 +682,31 @@ bench_normalize_new_optimized
 Заглавные ASCII буквы ('A'-'Z') имеют коды 65-90.Строчные ASCII буквы ('a'-'z') имеют коды 97-122. Разница между ними — ровно \(32\) (\(2^{5}\)). 6-й бит (считая с 0) у заглавных букв равен 0, а у строчных — 1.
 
 
-# 6.4
+# 6.4 Оптимизация `slow_dedup` и `slow_fib`
+Позаимствввуем `fast_dedup`  и `fast_fib`  из `reference_app`, т.к. дополнить к ним уже нечего и построим бенчмарки. 
+```sh
+cargo bench --bench criterion  \
+    --manifest-path ./repos/broken-app-6-optimized/Cargo.toml -- fib
+cargo bench --bench criterion  \
+    --manifest-path ./repos/broken-app-6-optimized/Cargo.toml -- dedup
+```
+Подробные логи: `artifacts/committed/6_4_fast_dedub.log` и `artifacts/committed/6_4_fast_fib.log`.
+Результат:
 
+```
+slow_dedup_broken       time:   [35.525 ms 36.431 ms 37.450 ms]
+bench_fast_dedup        time:   [401.36 µs 411.36 µs 423.23 µs]
+slow_fib_broken         time:   [25.340 ms 26.327 ms 27.411 ms]
+fast_fib_broken         time:   [68.196 ns 70.911 ns 73.991 ns]
+```
+Применим fast- функции для `demo`
+```rs
+    let fib = algo::fast_fib(20);
+    println!("fib(20): {}", fib);
+
+    let uniq = algo::fast_dedup(&[1, 2, 2, 3, 1, 4, 4]);
+    println!("dedup: {:?}", uniq);
+```
 
 
 # 3. Инструментированная сборка с Miri
@@ -735,6 +755,7 @@ readelf -S target/debug/instrumentation-demo | grep debug
 
 # Troubles
 
+
 ## git lfs track
 ```sh
 git lfs env
@@ -744,7 +765,6 @@ git lfs ls-files
 git show HEAD:artifacts/committed/reference-app-flamegraph-test-integration.svg
 git show HEAD:artifacts/committed/reference-app-flamegraph-test-integration.svg
 ```
-
 ## add reference-app as git submodule
 ```sh
 git submodule init
@@ -752,25 +772,17 @@ git submodule add -b module_5/reference-app git@github.com:svirsky-am/rrr-homewo
 git submodule add -b module_5/origin-of-broken-app git@github.com:svirsky-am/rrr-homeworks.git repos/origin-of-broken-app
 git submodule update --recursive
 ```
-
 ## Разрешить профилирование пользовательских процессов (рекомендуется)
 ```
 sudo sysctl -w kernel.perf_event_paranoid=1
 ```
-
 ## install flamegraph
-
 ```sh
-
 cargo install rustfilt
 cargo install demangle
 git clone https://github.com/brendangregg/FlameGraph /tmp/FlameGraph
 realpath ./FlameGraph
 ```
-
-
-
-
 ## feature `edition2024` is required 
 ```
 error: failed to parse manifest at `/home/svirsky/repos/yandex/reference-app/Cargo.toml`
