@@ -157,7 +157,32 @@ mod5_6_4_fast_dedub:
 		--manifest-path ./repos/broken-app-6-optimized/Cargo.toml -- dedup 2>&1 \
 		| tee artifacts/generated/6_4_fast_dedub.log
 
+PHONY: mod5_7_final_miri
+mod5_7_final_miri:
+	MIRIFLAGS="-Zmiri-backtrace=full -Awarnings"  cargo  miri test 2>&1 \
+		| tee artifacts/generated/7_final_miri.log
 
+PHONY: mod5_7_final_asan
+mod5_7_final_asan:
+	RUSTFLAGS="-Zsanitizer=address -Awarnings" cargo +nightly test \
+		--target x86_64-unknown-linux-gnu 2>&1 \
+		| tee artifacts/generated/7_final_asan.log
+
+PHONY: mod5_7_final_tsan
+mod5_7_final_tsan:
+	RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer -Awarnings" \
+    cargo +nightly run --bin demo_for_threats \
+	--target x86_64-unknown-linux-gnu 2>&1 \
+		| tee artifacts/generated/7_final_tsan.log
+
+PHONY: mod5_7_final_benchmarks_criterion
+mod5_7_final_benchmarks_criterion:
+	RUSTFLAGS="-Awarnings" cargo bench --bench criterion 2>&1 \
+		| tee artifacts/generated/7_final_benchmarks_criterion.log
+
+PHONY: mod5_7_final_all_in
+mod5_7_final_all_in: mod5_7_final_miri mod5_7_final_asan mod5_7_final_tsan mod5_7_final_benchmarks_criterion
+	echo mod5_7_final_all_in
 
 # 	RUSTFLAGS="-Awarnings" cargo  miri test --manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml && \
 # 	RUSTFLAGS="-Zsanitizer=address -Awarnings" cargo +nightly test  \

@@ -1,9 +1,9 @@
 # 0. Допущения
 
-- для `race_increment`, read_after_sleep нет юниттестов , а reset_counter даже не описан не reference_app
-- в тесте normalize нет кейса на проверку `\n` `\t`. Поэтому правка выполнена чуть позже 
-- в предоставленных broken_app  и reference_app не работают тесты criterion.
-- нагядно оформить сбор логов только за счет коммитов и bash скриптовв оказалось тяжело. Был применен git submodules с отображением коммитов на каждом шаге ДЗ;
+- для `race_increment`, `read_after_sleep` нет юниттестов , а `reset_counter` не описан в `reference_app`. Работоспособность воспроизведена на свое усмотрение;
+- в тесте `normalize` нет кейса на проверку `\n` `\t`. Поэтому правка выполнена чуть позже 
+- в предоставленных `broken_app`  и `reference_app` не работают тесты criterion. Работоспособность воспроизведена на свое усмотрение;
+- нагядно оформить сбор логов только за счет коммитов и bash скриптов оказалось тяжело. Был применен git submodules с отображением коммитов на каждом шаге ДЗ;
 - Для честности измерений старые реализации с "горячими фиксами" hot fix, реализации `reference-app` и новые оптимизации оформлены в одной библиотеке. Замеры будут вызываться в рамках одной сессии criterion.
 
 # Шаг 1. Ознакомление
@@ -18,6 +18,12 @@ git submodule update --recursive
     - `origin-of-broken-app-fix-unit`  - ветка `module_5/origin-of-broken-app` оригинальные исходники `broken-app` с правкой unit-тестов;
     - `origin-of-broken-app-with-hot-fix` - ветка `module_5/origin-of-broken-app-with-hot-fix'` с простыми фиксами тестов без оптимизаций.
     - `roken-app-2.4-fix-leak-buffer-after-miri` - ветка `module_5/roken-app-2.4-fix-leak-buffer-after-miri'` с фиксом утечки `fn leak_buffer`.
+    - `broken-app-3.1.1-add-unit-tests-for-leak-buff` - расшерение unit-тестов;
+    - `broken-app-3.3-extra-tests-for-normalyze-and-threat` - расшерение unit-тестов;
+    - `broken-app-3.3.3-fix-tsan-for-demo-for-threats` - ветка с фиксом функций из `src/concurrency.rs`;
+    - `broken-app-5.1-fixup-criterion-for-broken-app` - ветка с правкой бенчмарка criterion;
+    - `broken-app-6-optimized` - ветка с примененными оптимизациями;
+    - `broken-app-7-final` - ветка для контрольных проверок;
 <!-- - module_5/fix-solution-of-broken-appe -->
 
 <!-- - module_5/reference-app-criterion-via-black-box -->
@@ -312,11 +318,11 @@ cargo  miri test --manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-lea
 # asan
 RUSTFLAGS="-Zsanitizer=address" cargo +nightly test  \
 		--target x86_64-unknown-linux-gnu \
-		--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml
+		--manifest-path ./repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats/Cargo.toml
 # tsan
-RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer " cargo +nightly run --bin demo \
+RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer " cargo +nightly run --bin demo_for_threats \
 		--target x86_64-unknown-linux-gnu \
-		--manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml
+		--manifest-path ./repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats/Cargo.toml
 ```
 Результат в `artifacts/committed/mod5_3_1_2_check_after_hot_fix.log`
 ## 3.3 Дополнение имеющихся unit-тестов
@@ -718,11 +724,38 @@ git push --set-upstream origin module_5/broken-app-7-final
 popd
  -->
 На базе ветки `module_5/broken-app-6-optimized` оформим финальное решение в ветке `repos/broken-app-7-final` и `module_5/fix-solution-of-broken-app`
+ Контрольные проверки:
+```sh
+# miri
+MIRIFLAGS="-Zmiri-backtrace=full -Awarnings"  cargo  miri test
+# asan
+RUSTFLAGS="-Zsanitizer=address -Awarnings" cargo +nightly test \
+            --target x86_64-unknown-linux-gnu
+# tsan
+RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer -Awarnings" \
+    cargo +nightly run --bin demo_for_threats \
+		--target x86_64-unknown-linux-gnu
+# бенчмарки
+RUSTFLAGS="-Awarnings" cargo bench --bench criterion
+```
+Логи успешного финального прогона:
+- artifacts/generated/7_final_miri.log
+- artifacts/generated/7_final_asan.log
+- artifacts/generated/7_final_tsan.log
+- artifacts/generated/7_final_benchmarks_criterion.log
+
+## 7.1 Резюме
+Рамках работы было проведено:
+- быстрые фикс функций с помощью GDB;
+- восстановление работоспособности приложения `demo_for_threats`, использующего функции из `src/concurrency.rs`;
+- отлавливание срабатывание miri, asan/tsan и их фикс;
+- восстановление работоспособности бенчмарка criterion;
+- оптимизация функций `sum_even`, `normalize` и `average_positive` с ускорением их работы от 2х до 10 раз относительно `reference-app`;
+- построеный flamegraph и бенчмарки criterion для анализа улучшений;
 
 
-
-
-# 3. Инструментированная сборка с Miri
+# Troubles
+## Инструментированная сборка с Miri
 ```sh 
 rustup component add miri
 ```
@@ -730,45 +763,21 @@ rustup component add miri
 cargo +nightly miri setup  # один раз
 cargo +nightly miri test counts_non_zero_bytes
 ```
-
-# 3. Инструментированная сборка с valgrind
+## Инструментированная сборка с valgrind
 ```sh 
-
 sudo apt install valgrindy
-
 cargo install cargo-valgrind
 ```
-
-
-
 ```sh
-
 valgrind --leak-check=full ./target/debug/your_binary_name
 ```
-
-
-
-# Sampling: периодические снимки состояния
-```sh 
-sudo perf record -g ./target/debug/demo
-```
-
-
-
-target/debug/demo
-
-
-# debug symbols
-```
+## debug symbols
+Проверка наличия символов:
+```sh
 objdump --dwarf=info target/debug/instrumentation-demo | less 
 llvm-dwarfdump --debug-line target/debug/instrumentation-demo | head -n 40 
 readelf -S target/debug/instrumentation-demo | grep debug 
 ```
-
-
-# Troubles
-
-
 ## git lfs track
 ```sh
 git lfs env
