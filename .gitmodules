@@ -38,3 +38,7 @@
 	path = repos/broken-app-6-optimized
 	url = git@github.com:svirsky-am/rrr-homeworks.git
 	branch = module_5/broken-app-5.1-fixup-criterion-for-broken-app
+[submodule "repos/broken-app-7-final"]
+	path = repos/broken-app-7-final
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/broken-app-6-optimized
