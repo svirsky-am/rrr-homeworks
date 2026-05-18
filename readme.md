@@ -3,7 +3,8 @@
 - для `race_increment`, read_after_sleep нет юниттестов , а reset_counter даже не описан не reference_app
 - в тесте normalyze нет кейса на проверку `\n` `\t`. Поэтому правка выполнена чуть позже 
 - в предоставленных broken_app  и reference_app не работают тесты criterion.
-- нагядно оформить сбор логов только за счет коммитов и bash скриптовв оказалось тяжело. Был применен git submodules с отображением коммитов на каждом шаге ДЗ.
+- нагядно оформить сбор логов только за счет коммитов и bash скриптовв оказалось тяжело. Был применен git submodules с отображением коммитов на каждом шаге ДЗ;
+- Для честности измерений старые реализации с "горячими фиксами" hot fix, реализации `reference-app` и новые оптимизации оформлены в одной библиотеке. Замеры будут вызываться в рамках одной сессии criterion.
 
 # Шаг 1. Ознакомление
 ## 1.1 Клонируйте оба проекта (broken-app, reference-app).
@@ -553,9 +554,21 @@ sum_even_broken         time:   [146.57 µs 150.48 µs 154.83 µs]
 ...
 ```
 Подробности в логе `artifacts/committed/broken-app-5.1.1-fixup-criterion.log`.
+Для честности измерений старые реализации с "горячими фиксами" hot fix, реализации `reference-app` и новые оптимизации оформлены в одной библиотеке. Замеры будут вызываться в рамках одной сессии criterion.
 
 ## Шаг 6. Оптимизация
+Оптимизации будут выполнены на ветке `module_5/broken-app-6-optimized` на базе ветки `module_5/broken-app-5.1-fixup-criterion-for-broken-app`
+<!--
+git submodule add -b module_5/broken-app-5.1-fixup-criterion-for-broken-app git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-6-optimized
+pushd repos/broken-app-6-optimized
+git checkout -b module_5/broken-app-6-optimized
+git push --set-upstream origin module_5/broken-app-6-optimized
+popd
+ -->
+
 ## 6.1 Микро оптимизация `sum_even`
+
+
 Самое быстрое решение (похоже за счет оптимизаций компилдятора) ~546ns против   : ~164.27µs в reference app
 ```rs
 let mut acc: i64 = 0;
