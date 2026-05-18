@@ -16,3 +16,9 @@ harness = false
 [[bench]]
 name = "criterion"
 harness = false
+
+[[bench]]
+name = "baseline_sum_even"
+harness = false
+
+

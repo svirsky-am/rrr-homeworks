@@ -15,8 +15,8 @@ fn main() {
 
     // Несколько прогонов для устойчивости.
     for _ in 0..3 {
-        time_it("sum_even", || {
-            let _ = sum_even(&data);
+        time_it("sum_even_with_hot_fix", || {
+            let _ = sum_even_with_hot_fix(&data);
         });
 
         // time_it("slow_fib", || {

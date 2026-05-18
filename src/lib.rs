@@ -2,7 +2,7 @@ pub mod algo;
 pub mod concurrency;
 
 /// с hot fix
-pub fn sum_even(values: &[i64]) -> i64 {
+pub fn sum_even_with_hot_fix(values: &[i64]) -> i64 {
     let mut acc = 0;
     unsafe {
         for idx in 0..=values.len() - 1 {
@@ -14,6 +14,27 @@ pub fn sum_even(values: &[i64]) -> i64 {
     }
     acc
 }
+
+/// Оптимизировавнный вариант 
+pub fn sum_even_new_optimized(values: &[i64]) -> i64 {
+    let mut acc: i64 = 0;
+    for &v in values {
+        if (v & 1) == 0 { acc += v; }
+    }
+    acc
+}
+
+pub fn sum_even(values: &[i64]) -> i64 {
+    sum_even_new_optimized(values)
+}
+
+
+/// Реализация из reference-app работает модленее т.к. создается объект итератора и его копирование .
+/// Скорее всего тут еще два прохода по итератору: один фильтр, второй sum
+pub fn sum_even_by_reference_app(values: &[i64]) -> i64 {
+    values.iter().copied().filter(|v| v % 2 == 0).sum()
+}
+
 
 /// Подсчёт ненулевых байтов. Буфер намеренно не освобождается,
 /// что приведёт к утечке памяти (Valgrind это покажет).

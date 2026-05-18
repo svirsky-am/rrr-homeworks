@@ -1,4 +1,7 @@
-use broken_app::{algo, sum_even, 
+use broken_app::{algo, sum_even,
+    sum_even_new_optimized,
+    sum_even_with_hot_fix,
+    sum_even_by_reference_app,
     normalize, 
     // normalize_by_reference_app,  
     // normalize_faster_new_alt, 
@@ -10,6 +13,26 @@ fn bench_sum_even(c: &mut Criterion) {
     let data: Vec<i64> = (0..50_000).collect();
     c.bench_function("sum_even_broken", |b| b.iter(|| sum_even(&data)));
 }
+
+fn bench_sum_even_new_optimized(c: &mut Criterion) {
+    let data: Vec<i64> = (0..5_000).collect();
+    c.bench_function("sum_even_new_optimized", |b| b.iter(|| sum_even_new_optimized(&data)));
+}
+
+
+fn bench_sum_even_with_hot_fix(c: &mut Criterion) {
+    let data: Vec<i64> = (0..5_000).collect();
+    c.bench_function("sum_even_with_hot_fix", |b| b.iter(|| sum_even_with_hot_fix(&data)));
+}
+
+
+fn bench_sum_even_by_reference_app(c: &mut Criterion) {
+    let data: Vec<i64> = (0..5_000).collect();
+    c.bench_function("sum_even_by_reference_app", |b| b.iter(|| sum_even_by_reference_app(&data)));
+}
+
+
+
 
 fn bench_fib(c: &mut Criterion) {
     c.bench_function("slow_fib_broken", |b| b.iter(|| algo::slow_fib(32)));
@@ -74,10 +97,17 @@ fn bench_average_positive(c: &mut Criterion) {
 //     });
 // }
 
-criterion_group!(benches, bench_sum_even, bench_fib, bench_dedup, 
+criterion_group!(benches_sum_even,
+                    bench_sum_even_new_optimized,
+                    bench_sum_even_with_hot_fix,
+                    bench_sum_even_by_reference_app
+);
+
+
+criterion_group!(benches, bench_fib, bench_dedup, 
     // bench_normalize_by_reference_app,
     // bench_normalize_faster_new_alt,
     bench_average_positive,
     // bench_average_positive_by_reference_app
 );
-criterion_main!(benches);
+criterion_main!(benches_sum_even, benches);
