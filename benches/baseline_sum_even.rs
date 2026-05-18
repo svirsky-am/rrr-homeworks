@@ -1,4 +1,4 @@
-use broken_app::{algo, sum_even};
+use broken_app::{algo, sum_even, sum_even_with_hot_fix};
 use std::time::{Duration, Instant};
 
 fn time_it(label: &str, mut f: impl FnMut()) {

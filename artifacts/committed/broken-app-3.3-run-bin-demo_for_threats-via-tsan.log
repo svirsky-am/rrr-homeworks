@@ -1,0 +1,113 @@
+warning: unused manifest key: target.cfg(target_os = "linux").rustflags
+warning: unused manifest key: unstable
+   Compiling broken-app v0.1.0 (/home/svirsky/repos/yandex/broken-app/repos/broken-app-3.3-extra-tests-for-normalyze-and-threat)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.61s
+     Running `repos/broken-app-3.3-extra-tests-for-normalyze-and-threat/target/x86_64-unknown-linux-gnu/debug/demo_for_threats`
+/usr/bin/addr2line: DWARF error: invalid or unhandled FORM value: 0x23
+==================
+WARNING: ThreadSanitizer: data race (pid=3681059)
+  Read of size 8 at 0x5555565cf750 by thread T2:
+    #0 broken_app::concurrency::race_increment::{closure#0} 1lx96sy8lq32k89bf9owwwkao:? (demo_for_threats+0xdd3f1) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #1 std::sys::backtrace::__rust_begin_short_backtrace::<broken_app::concurrency::race_increment::{closure#0}, ()> ??:? (demo_for_threats+0xdd301) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #2 std::thread::lifecycle::spawn_unchecked::<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1}::{closure#0} ??:? (demo_for_threats+0xdba3e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #3 <core::panic::unwind_safe::AssertUnwindSafe<std::thread::lifecycle::spawn_unchecked<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1}::{closure#0}> as core::ops::function::FnOnce<()>>::call_once ??:? (demo_for_threats+0xe3429) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #4 std::panicking::catch_unwind::do_call::<core::panic::unwind_safe::AssertUnwindSafe<std::thread::lifecycle::spawn_unchecked<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1}::{closure#0}>, ()> ??:? (demo_for_threats+0xe3213) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #5 __rust_try 5ud0iiafwkp9qr6ddd0pzjhbl:? (demo_for_threats+0xdbdd8) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #6 std::thread::lifecycle::spawn_unchecked::<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1} ??:? (demo_for_threats+0xdb4fd) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #7 <std::thread::lifecycle::spawn_unchecked<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0} c3tt750elmdhqz90itwq3n25q:? (demo_for_threats+0xdfd15) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #8 <std::sys::thread::unix::Thread>::new::thread_start std.3564f13ba91be0bb-cgu.0:? (demo_for_threats+0x10e09e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+
+  Previous write of size 8 at 0x5555565cf750 by thread T1:
+    #0 broken_app::concurrency::race_increment::{closure#0} 1lx96sy8lq32k89bf9owwwkao:? (demo_for_threats+0xdd450) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #1 std::sys::backtrace::__rust_begin_short_backtrace::<broken_app::concurrency::race_increment::{closure#0}, ()> ??:? (demo_for_threats+0xdd301) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #2 std::thread::lifecycle::spawn_unchecked::<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1}::{closure#0} ??:? (demo_for_threats+0xdba3e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #3 <core::panic::unwind_safe::AssertUnwindSafe<std::thread::lifecycle::spawn_unchecked<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1}::{closure#0}> as core::ops::function::FnOnce<()>>::call_once ??:? (demo_for_threats+0xe3429) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #4 std::panicking::catch_unwind::do_call::<core::panic::unwind_safe::AssertUnwindSafe<std::thread::lifecycle::spawn_unchecked<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1}::{closure#0}>, ()> ??:? (demo_for_threats+0xe3213) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #5 __rust_try 5ud0iiafwkp9qr6ddd0pzjhbl:? (demo_for_threats+0xdbdd8) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #6 std::thread::lifecycle::spawn_unchecked::<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1} ??:? (demo_for_threats+0xdb4fd) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #7 <std::thread::lifecycle::spawn_unchecked<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0} c3tt750elmdhqz90itwq3n25q:? (demo_for_threats+0xdfd15) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #8 <std::sys::thread::unix::Thread>::new::thread_start std.3564f13ba91be0bb-cgu.0:? (demo_for_threats+0x10e09e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+
+  Thread T2 (tid=3681223, running) created by main thread at:
+    #0 pthread_create ??:? (demo_for_threats+0x5148a) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #1 <std::sys::thread::unix::Thread>::new ??:? (demo_for_threats+0xfbba0) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #2 <std::thread::builder::Builder>::spawn_unchecked::<broken_app::concurrency::race_increment::{closure#0}, ()> ??:? (demo_for_threats+0xdc9d1) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #3 std::thread::functions::spawn::<broken_app::concurrency::race_increment::{closure#0}, ()> ??:? (demo_for_threats+0xdc880) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #4 broken_app::concurrency::race_increment ??:? (demo_for_threats+0xd9e70) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #5 demo_for_threats::main 89ylmkeqiopogj8rlce0ymb3m:? (demo_for_threats+0xd98d6) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #6 <fn() as core::ops::function::FnOnce<()>>::call_once 4x1m28cdn00jgua9w1m7ernir:? (demo_for_threats+0xd965e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #7 std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()> 68kdx9ef6133focfp9vsiucu0:? (demo_for_threats+0xd9731) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #8 std::rt::lang_start::<()>::{closure#0} 880x5zkpvb8w1vdtl8do2n9b6:? (demo_for_threats+0xd985e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #9 std::rt::lang_start_internal ??:? (demo_for_threats+0x109906) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #10 main ??:? (demo_for_threats+0xd9a79) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+
+  Thread T1 (tid=3681222, finished) created by main thread at:
+    #0 pthread_create ??:? (demo_for_threats+0x5148a) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #1 <std::sys::thread::unix::Thread>::new ??:? (demo_for_threats+0xfbba0) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #2 <std::thread::builder::Builder>::spawn_unchecked::<broken_app::concurrency::race_increment::{closure#0}, ()> ??:? (demo_for_threats+0xdc9d1) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #3 std::thread::functions::spawn::<broken_app::concurrency::race_increment::{closure#0}, ()> ??:? (demo_for_threats+0xdc880) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #4 broken_app::concurrency::race_increment ??:? (demo_for_threats+0xd9e70) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #5 demo_for_threats::main 89ylmkeqiopogj8rlce0ymb3m:? (demo_for_threats+0xd98d6) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #6 <fn() as core::ops::function::FnOnce<()>>::call_once 4x1m28cdn00jgua9w1m7ernir:? (demo_for_threats+0xd965e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #7 std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()> 68kdx9ef6133focfp9vsiucu0:? (demo_for_threats+0xd9731) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #8 std::rt::lang_start::<()>::{closure#0} 880x5zkpvb8w1vdtl8do2n9b6:? (demo_for_threats+0xd985e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #9 std::rt::lang_start_internal ??:? (demo_for_threats+0x109906) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #10 main ??:? (demo_for_threats+0xd9a79) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+
+SUMMARY: ThreadSanitizer: data race 1lx96sy8lq32k89bf9owwwkao:? in broken_app::concurrency::race_increment::{closure#0}
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=3681059)
+  Write of size 8 at 0x5555565cf750 by thread T4:
+    #0 broken_app::concurrency::race_increment::{closure#0} 1lx96sy8lq32k89bf9owwwkao:? (demo_for_threats+0xdd450) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #1 std::sys::backtrace::__rust_begin_short_backtrace::<broken_app::concurrency::race_increment::{closure#0}, ()> ??:? (demo_for_threats+0xdd301) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #2 std::thread::lifecycle::spawn_unchecked::<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1}::{closure#0} ??:? (demo_for_threats+0xdba3e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #3 <core::panic::unwind_safe::AssertUnwindSafe<std::thread::lifecycle::spawn_unchecked<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1}::{closure#0}> as core::ops::function::FnOnce<()>>::call_once ??:? (demo_for_threats+0xe3429) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #4 std::panicking::catch_unwind::do_call::<core::panic::unwind_safe::AssertUnwindSafe<std::thread::lifecycle::spawn_unchecked<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1}::{closure#0}>, ()> ??:? (demo_for_threats+0xe3213) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #5 __rust_try 5ud0iiafwkp9qr6ddd0pzjhbl:? (demo_for_threats+0xdbdd8) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #6 std::thread::lifecycle::spawn_unchecked::<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1} ??:? (demo_for_threats+0xdb4fd) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #7 <std::thread::lifecycle::spawn_unchecked<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0} c3tt750elmdhqz90itwq3n25q:? (demo_for_threats+0xdfd15) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #8 <std::sys::thread::unix::Thread>::new::thread_start std.3564f13ba91be0bb-cgu.0:? (demo_for_threats+0x10e09e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+
+  Previous write of size 8 at 0x5555565cf750 by thread T3:
+    #0 broken_app::concurrency::race_increment::{closure#0} 1lx96sy8lq32k89bf9owwwkao:? (demo_for_threats+0xdd450) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #1 std::sys::backtrace::__rust_begin_short_backtrace::<broken_app::concurrency::race_increment::{closure#0}, ()> ??:? (demo_for_threats+0xdd301) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #2 std::thread::lifecycle::spawn_unchecked::<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1}::{closure#0} ??:? (demo_for_threats+0xdba3e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #3 <core::panic::unwind_safe::AssertUnwindSafe<std::thread::lifecycle::spawn_unchecked<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1}::{closure#0}> as core::ops::function::FnOnce<()>>::call_once ??:? (demo_for_threats+0xe3429) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #4 std::panicking::catch_unwind::do_call::<core::panic::unwind_safe::AssertUnwindSafe<std::thread::lifecycle::spawn_unchecked<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1}::{closure#0}>, ()> ??:? (demo_for_threats+0xe3213) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #5 __rust_try 5ud0iiafwkp9qr6ddd0pzjhbl:? (demo_for_threats+0xdbdd8) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #6 std::thread::lifecycle::spawn_unchecked::<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1} ??:? (demo_for_threats+0xdb4fd) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #7 <std::thread::lifecycle::spawn_unchecked<broken_app::concurrency::race_increment::{closure#0}, ()>::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0} c3tt750elmdhqz90itwq3n25q:? (demo_for_threats+0xdfd15) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #8 <std::sys::thread::unix::Thread>::new::thread_start std.3564f13ba91be0bb-cgu.0:? (demo_for_threats+0x10e09e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+
+  Thread T4 (tid=3681225, running) created by main thread at:
+    #0 pthread_create ??:? (demo_for_threats+0x5148a) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #1 <std::sys::thread::unix::Thread>::new ??:? (demo_for_threats+0xfbba0) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #2 <std::thread::builder::Builder>::spawn_unchecked::<broken_app::concurrency::race_increment::{closure#0}, ()> ??:? (demo_for_threats+0xdc9d1) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #3 std::thread::functions::spawn::<broken_app::concurrency::race_increment::{closure#0}, ()> ??:? (demo_for_threats+0xdc880) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #4 broken_app::concurrency::race_increment ??:? (demo_for_threats+0xd9e70) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #5 demo_for_threats::main 89ylmkeqiopogj8rlce0ymb3m:? (demo_for_threats+0xd98d6) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #6 <fn() as core::ops::function::FnOnce<()>>::call_once 4x1m28cdn00jgua9w1m7ernir:? (demo_for_threats+0xd965e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #7 std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()> 68kdx9ef6133focfp9vsiucu0:? (demo_for_threats+0xd9731) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #8 std::rt::lang_start::<()>::{closure#0} 880x5zkpvb8w1vdtl8do2n9b6:? (demo_for_threats+0xd985e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #9 std::rt::lang_start_internal ??:? (demo_for_threats+0x109906) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #10 main ??:? (demo_for_threats+0xd9a79) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+
+  Thread T3 (tid=3681224, finished) created by main thread at:
+    #0 pthread_create ??:? (demo_for_threats+0x5148a) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #1 <std::sys::thread::unix::Thread>::new ??:? (demo_for_threats+0xfbba0) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #2 <std::thread::builder::Builder>::spawn_unchecked::<broken_app::concurrency::race_increment::{closure#0}, ()> ??:? (demo_for_threats+0xdc9d1) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #3 std::thread::functions::spawn::<broken_app::concurrency::race_increment::{closure#0}, ()> ??:? (demo_for_threats+0xdc880) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #4 broken_app::concurrency::race_increment ??:? (demo_for_threats+0xd9e70) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #5 demo_for_threats::main 89ylmkeqiopogj8rlce0ymb3m:? (demo_for_threats+0xd98d6) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #6 <fn() as core::ops::function::FnOnce<()>>::call_once 4x1m28cdn00jgua9w1m7ernir:? (demo_for_threats+0xd965e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #7 std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()> 68kdx9ef6133focfp9vsiucu0:? (demo_for_threats+0xd9731) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #8 std::rt::lang_start::<()>::{closure#0} 880x5zkpvb8w1vdtl8do2n9b6:? (demo_for_threats+0xd985e) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #9 std::rt::lang_start_internal ??:? (demo_for_threats+0x109906) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+    #10 main ??:? (demo_for_threats+0xd9a79) (BuildId: 48b62da21fb15af62aa5f73fd59d4f68bb010416)
+
+SUMMARY: ThreadSanitizer: data race 1lx96sy8lq32k89bf9owwwkao:? in broken_app::concurrency::race_increment::{closure#0}
+==================
+total: 3000
+total: 3000
+ThreadSanitizer: reported 2 warnings

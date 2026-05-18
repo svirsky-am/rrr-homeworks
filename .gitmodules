@@ -1,0 +1,44 @@
+[submodule "repos/reference-app"]
+	path = repos/reference-app
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/reference-app
+[submodule "repos/origin-of-broken-app"]
+	path = repos/origin-of-broken-app
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/origin-of-broken-app
+[submodule "repos/origin-of-broken-app-fix-unit"]
+	path = repos/origin-of-broken-app-fix-unit
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/reference-app
+[submodule "repos/origin-of-broken-app-with-hot-fix"]
+	path = repos/origin-of-broken-app-with-hot-fix
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/origin-of-broken-app
+[submodule "repos/broken-app-2.4-fix-leak-buffer-after-miri"]
+	path = repos/broken-app-2.4-fix-leak-buffer-after-miri
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/broken-app-2.4-fix-leak-buffer-after-miri
+[submodule "repos/broken-app-3.1.1-add-unit-tests-for-leak-buff"]
+	path = repos/broken-app-3.1.1-add-unit-tests-for-leak-buff
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/broken-app-3.1.1-add-unit-tests-for-leak-buff
+[submodule "repos/broken-app-3.3-extra-tests-for-normalyze-and-threat"]
+	path = repos/broken-app-3.3-extra-tests-for-normalyze-and-threat
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/broken-app-3.3-extra-tests-for-normalyze-and-threat
+[submodule "repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats"]
+	path = repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/broken-app-3.3-extra-tests-for-normalyze-and-threat
+[submodule "repos/broken-app-5.1-fixup-criterion-for-broken-app"]
+	path = repos/broken-app-5.1-fixup-criterion-for-broken-app
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats
+[submodule "repos/broken-app-6-optimized"]
+	path = repos/broken-app-6-optimized
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/broken-app-5.1-fixup-criterion-for-broken-app
+[submodule "repos/broken-app-7-final"]
+	path = repos/broken-app-7-final
+	url = git@github.com:svirsky-am/rrr-homeworks.git
+	branch = module_5/broken-app-6-optimized

@@ -14,11 +14,19 @@ harness = false
 
 
 [[bench]]
-name = "criterion"
-harness = false
+name = "criterion"  # Должен совпадать с именем файла в benches/
+harness = false         #  Отключает libtest
 
 [[bench]]
 name = "baseline_sum_even"
 harness = false
 
 
+# Разрешаем использование флагов санитайзеров
+[unstable]
+sanitizer = true
+
+# Применяем санитайзер только к целевой платформе
+# Но НЕ к proc-macro (они компилируются для хоста)
+[target.'cfg(target_os = "linux")']
+rustflags = ["-Zsanitizer=address"]

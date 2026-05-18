@@ -1,0 +1,10 @@
+warning: unused manifest key: target.cfg(target_os = "linux").rustflags
+warning: unused manifest key: unstable
+   Compiling broken-app v0.1.0 (/home/svirsky/repos/yandex/broken-app/repos/broken-app-3.1.1-add-unit-tests-for-leak-buff)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.39s
+     Running `repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/target/x86_64-unknown-linux-gnu/debug/demo`
+sum_even: 6
+non-zero bytes: 3
+normalize: helloworld
+fib(20): 6765
+dedup: [1, 2, 3, 4]
