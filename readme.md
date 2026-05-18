@@ -709,6 +709,19 @@ fast_fib_broken         time:   [68.196 ns 70.911 ns 73.991 ns]
 ```
 
 
+# Шаг 7. Проверка «после»
+<!--
+git submodule add -b module_5/broken-app-6-optimized git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-7-final
+pushd repos/broken-app-7-final
+git checkout -b module_5/broken-app-7-final
+git push --set-upstream origin module_5/broken-app-7-final
+popd
+ -->
+На базе ветки `module_5/broken-app-6-optimized` оформим финальное решение в ветке `repos/broken-app-7-final` и `module_5/fix-solution-of-broken-app`
+
+
+
+
 # 3. Инструментированная сборка с Miri
 ```sh 
 rustup component add miri
