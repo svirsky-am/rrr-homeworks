@@ -139,6 +139,11 @@ mod5_6_2_optimyze_average_positive:
 
 
 
+PHONY: mod5_6_3_optimyze_normalize
+mod5_6_3_optimyze_normalize:
+	RUSTFLAGS="-Awarnings" cargo bench  --bench criterion \
+		--manifest-path ./repos/broken-app-6-optimized/Cargo.toml -- normalize 2>&1 \
+		| tee artifacts/generated/6_3_optimyze_normalize_get_criterion.log
 
 
 
