@@ -112,10 +112,17 @@ RUSTFLAGS="-C force-frame-pointers=yes" cargo flamegraph -F 4000 \
     --output artifacts/generated/reference-app-flamegraph-test-integration.svg
 
 PHONY: mod5_4_1_profile_for_bench
+mod5_4_1_profile_for_bench:
 RUSTFLAGS="-C force-frame-pointers=yes" cargo flamegraph -F 4000 \
     --manifest-path ./repos/reference-app/Cargo.toml \
     --release --root --bench baseline \
     --output artifacts/generated/reference-app-flamegraph-test-integration.svg
+
+PHONY: mod5_5_1_1_fixup_criterion
+mod5_5_1_1_fixup_criterion:
+	RUSTFLAGS="-Awarnings" cargo bench  --bench criterion \
+		--manifest-path ./repos/broken-app-5.1-fixup-criterion-for-broken-app/Cargo.toml 2>&1 \
+		| tee artifacts/generated/broken-app-5.1.1-fixup-criterion.log
 
 # 	RUSTFLAGS="-Awarnings" cargo  miri test --manifest-path ./repos/broken-app-3.1.1-add-unit-tests-for-leak-buff/Cargo.toml && \
 # 	RUSTFLAGS="-Zsanitizer=address -Awarnings" cargo +nightly test  \

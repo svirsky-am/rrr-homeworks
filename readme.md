@@ -518,28 +518,41 @@ RUSTFLAGS="-C force-frame-pointers=yes" cargo flamegraph -F 400 \
 
 ## 5.1 Настройка бенчмарков для broken_app и reference_app
 ### 5.1.1. Праввка вызова criterion в `broken_app`
-На оригинальном broken-app с hot-фиксами не работает бенчмарк criterion
-```sh
-cargo bench  --bench criterion  \
-		--manifest-path ./repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats/Cargo.toml
-```
+На оригинальном broken-app с hot-фиксами не работает бенчмарк criterion.
+
 
 На базе ветки `module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats` с хотфиксами оригинального `broken-app` подготовим ветку для сбора бенчмарков.
 
 <!--
-git submodule add -b module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-4.1-get-flamegraph
-pushd repos/broken-app-4.1-get-flamegraph
-git checkout -b module_5/broken-app-4.1-get-flamegraph
-git push --set-upstream origin module_5/broken-app-4.1-get-flamegraph
+git submodule add -b module_5/broken-app-3.3.3-fix-tsan-for-demo-for-threats git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-5.1-fixup-criterion-for-broken-app
+pushd repos/broken-app-5.1-fixup-criterion-for-broken-app
+git checkout -b module_5/broken-app-5.1-fixup-criterion-for-broken-app
+git push --set-upstream origin module_5/broken-app-5.1-fixup-criterion-for-broken-app
 popd
  -->
 
 
-Выполним профилирование после горячих фиксов на ветке `broken-app-3.1.1-add-unit-tests-for-leak-buff`, полученной на базе ветки `broken-app-4.1.1-fix-criterion`.
-<!-- git submodule add -b module_5/broken-app-3.1.1-add-unit-tests-for-leak-buff git@github.com:svirsky-am/rrr-homeworks.git repos/broken-app-5.1.1-fix-criterion -->
+В corgo.toml нужно добавить 
 
-
-
+```toml
+[[bench]]
+name = "criterion"  # Должен совпадать с именем файла в benches/
+harness = false         #  Отключает libtest
+```
+Запустим бенчмарк:
+```sh
+cargo bench  --bench criterion \
+    --manifest-path ./repos/broken-app-5.1-fixup-criterion-for-broken-app/Cargo.toml
+```
+Наблюдаем результаты в формате:
+```
+...
+sum_even_broken         time:   [146.57 µs 150.48 µs 154.83 µs]
+                        change: [-16.346% -12.940% -9.5176%] (p = 0.00 < 0.05)
+                        Performance has improved.
+...
+```
+Подробности в логе `artifacts/committed/broken-app-5.1.1-fixup-criterion.log`.
 
 ## Шаг 6. Оптимизация
 ## 6.1 Микро оптимизация `sum_even`
