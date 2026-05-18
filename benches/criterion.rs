@@ -37,11 +37,15 @@ fn bench_sum_even_by_reference_app(c: &mut Criterion) {
 
 
 
-fn bench_fib(c: &mut Criterion) {
+fn bench_slow_fib(c: &mut Criterion) {
     c.bench_function("slow_fib_broken", |b| b.iter(|| algo::slow_fib(32)));
 }
 
-fn bench_dedup(c: &mut Criterion) {
+fn bench_fast_fib(c: &mut Criterion) {
+    c.bench_function("fast_fib_broken", |b| b.iter(|| algo::fast_fib(32)));
+}
+
+fn bench_slow_dedup(c: &mut Criterion) {
     let data: Vec<u64> = (0..5_000).flat_map(|n| [n, n]).collect();
     c.bench_function("slow_dedup_broken", |b| {
         b.iter_batched(
@@ -53,6 +57,20 @@ fn bench_dedup(c: &mut Criterion) {
         )
     });
 }
+
+fn bench_fast_dedup(c: &mut Criterion) {
+    let data: Vec<u64> = (0..5_000).flat_map(|n| [n, n]).collect();
+    c.bench_function("bench_fast_dedup", |b| {
+        b.iter_batched(
+            || data.clone(),
+            |v| {
+                let _ = algo::fast_dedup(&v);
+            },
+            BatchSize::SmallInput,
+        )
+    });
+}
+
 
 static STRING_TO_NORMALIZE: &str = " Hel\n\nlo \t\tWor\t\tld  Hel\n\nlo \t\tWor\t\tld  Hel\n\nlo \t\tWor\t\tld  Hel\n\nlo \t\tWor\t\tld  Hel\n\nlo \t\tWor\t\tld  Hel\n\nlo \t\tWor\t\tld  Hel\n\nlo \t\tWor\t\tld ";
 
@@ -124,14 +142,13 @@ criterion_group!(benches_normalize,
                     bench_normalize_new_optimized
 );
 
+criterion_group!(benches_fib, bench_fast_fib, bench_slow_fib);
+criterion_group!(benches_dedup, bench_slow_dedup, bench_fast_dedup);
 
-criterion_group!(benches, bench_fib, bench_dedup, 
-    // bench_normalize_by_reference_app,
-    // bench_normalize_faster_new_alt,
-    //bench_average_positive,
-    // bench_average_positive_by_reference_app
-);
+
+
 criterion_main!(benches_sum_even, 
                 benches_average_positive,
                 benches_normalize,
-                benches);
+                benches_fib,
+                benches_dedup);
