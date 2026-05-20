@@ -11,9 +11,12 @@ members = [
     "image_ffi_project/image_processor", "image_ffi_project/mirror_plugin", "image_ffi_project/blur_plugin", 
 # module 5
 "is-not-broken-app",
-
+# module 6
+"analysis-project",
 #    "image_ffi_project", 
 # "sandbox_env", 
+
+
 
 ]
 resolver = "2"

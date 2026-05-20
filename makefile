@@ -13,3 +13,7 @@ include image_ffi_project/run_build_test_mod4.mk
 
 # module 5
 include is-not-broken-app/scripts/module_5_fix_broken_app.mk
+
+
+# module 6
+include analysis-project/module6_analysis.mk
