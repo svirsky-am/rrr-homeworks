@@ -1,0 +1,23 @@
+warning: unused manifest key: target.cfg(target_os = "linux").rustflags
+warning: unused manifest key: unstable
+    Finished `bench` profile [optimized] target(s) in 0.24s
+     Running benches/criterion.rs (repos/broken-app-6-optimized/target/release/deps/criterion-4e6ac6b578b38dc3)
+Gnuplot not found, using plotters backend
+Benchmarking slow_dedup_broken
+Benchmarking slow_dedup_broken: Warming up for 3.0000 s
+Benchmarking slow_dedup_broken: Collecting 100 samples in estimated 8.1983 s (200 iterations)
+Benchmarking slow_dedup_broken: Analyzing
+slow_dedup_broken       time:   [35.525 ms 36.431 ms 37.450 ms]
+Found 13 outliers among 100 measurements (13.00%)
+  5 (5.00%) high mild
+  8 (8.00%) high severe
+
+Benchmarking bench_fast_dedup
+Benchmarking bench_fast_dedup: Warming up for 3.0000 s
+Benchmarking bench_fast_dedup: Collecting 100 samples in estimated 5.5685 s (10k iterations)
+Benchmarking bench_fast_dedup: Analyzing
+bench_fast_dedup        time:   [401.36 µs 411.36 µs 423.23 µs]
+Found 6 outliers among 100 measurements (6.00%)
+  5 (5.00%) high mild
+  1 (1.00%) high severe
+

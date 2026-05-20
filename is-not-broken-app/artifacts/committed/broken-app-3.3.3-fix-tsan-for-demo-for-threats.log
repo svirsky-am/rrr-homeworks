@@ -1,0 +1,9 @@
+warning: unused manifest key: target.cfg(target_os = "linux").rustflags
+warning: unused manifest key: unstable
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.14s
+     Running `repos/broken-app-3.3.3-fix-tsan-for-demo-for-threats/target/x86_64-unknown-linux-gnu/debug/demo_for_threats`
+Запуск race_increment(1_000, 4)...
+После инкремента: total = 4000
+После sleep: counter = 4000
+После reset: counter = 0
+Все проверки пройдены!

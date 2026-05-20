@@ -1,0 +1,40 @@
+warning: unused manifest key: target.cfg(target_os = "linux").rustflags
+warning: unused manifest key: unstable
+   Compiling criterion v0.5.1
+   Compiling broken-app v0.1.0 (/home/svirsky/repos/yandex/broken-app/repos/broken-app-6-optimized)
+    Finished `bench` profile [optimized] target(s) in 34.49s
+     Running benches/criterion.rs (repos/broken-app-6-optimized/target/release/deps/criterion-4e6ac6b578b38dc3)
+Gnuplot not found, using plotters backend
+Benchmarking sum_even_new_optimized
+Benchmarking sum_even_new_optimized: Warming up for 3.0000 s
+Benchmarking sum_even_new_optimized: Collecting 100 samples in estimated 5.0203 s (606k iterations)
+Benchmarking sum_even_new_optimized: Analyzing
+sum_even_new_optimized  time:   [7.0117 µs 7.1757 µs 7.3601 µs]
+                        change: [+51.561% +57.198% +63.078%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 9 outliers among 100 measurements (9.00%)
+  7 (7.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking sum_even_with_hot_fix
+Benchmarking sum_even_with_hot_fix: Warming up for 3.0000 s
+Benchmarking sum_even_with_hot_fix: Collecting 100 samples in estimated 5.0755 s (313k iterations)
+Benchmarking sum_even_with_hot_fix: Analyzing
+sum_even_with_hot_fix   time:   [17.907 µs 18.716 µs 19.566 µs]
+                        change: [+37.335% +43.692% +50.510%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 3 outliers among 100 measurements (3.00%)
+  2 (2.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking sum_even_by_reference_app
+Benchmarking sum_even_by_reference_app: Warming up for 3.0000 s
+Benchmarking sum_even_by_reference_app: Collecting 100 samples in estimated 5.0121 s (520k iterations)
+Benchmarking sum_even_by_reference_app: Analyzing
+sum_even_by_reference_app
+                        time:   [9.5698 µs 9.9121 µs 10.303 µs]
+                        change: [+42.992% +49.457% +56.008%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+
