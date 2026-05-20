@@ -63,7 +63,7 @@ impl Iterator for LogIterator {
     type Item = parse::LogLine;
     fn next(&mut self) -> Option<Self::Item> {
         let line = self.lines.next()?.ok()?;
-        let (remaining, result) = LOG_LINE_PARSER.parse(line.trim().to_string()).ok()?;
+        let (remaining, result) = LOG_LINE_PARSER.parse(line.trim()).ok()?;
         remaining.trim().is_empty().then_some(result)
     }
 }
@@ -196,7 +196,7 @@ App::Journal BuyAsset UserBacket{"user_id":"Alice","backet":Backet{"asset_id":"m
     #[test]
     fn test_all() {
         let refcell1: std::rc::Rc<std::cell::RefCell<Box<dyn MyReader>>> = std::rc::Rc::new(std::cell::RefCell::new(Box::new(SOURCE1.as_bytes())));
-        assert_eq!(read_log(refcell1.clone(), READ_MODE_ALL, vec![]).len(), 1);
+        assert_eq!(read_log(refcell1, READ_MODE_ALL, vec![]).len(), 1);
         let refcell: std::rc::Rc<std::cell::RefCell<Box<dyn MyReader>>> = std::rc::Rc::new(std::cell::RefCell::new(Box::new(SOURCE.as_bytes())));
         let all_parsed = read_log(refcell.clone(), READ_MODE_ALL, vec![]);
         println!("all parsed:");
