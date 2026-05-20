@@ -41,6 +41,14 @@ jobs:
               - 'blog-project/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
+            image_ffi_project:
+              - 'image_ffi_project/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+            is_not_broken_app:
+              - 'is-not-broken-app/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
   # Job 1: Build & test core crates (rr-parser-lib + rr-file-processor)
   build-and-test-core:
     needs: changes
@@ -107,3 +115,15 @@ jobs:
 
       - name: Build and test image_processor
         run: cargo test -p  "image_processor" --test integration -- --nocapture
+
+
+  # Job 5: Build & test "is not broken app"
+  build-and-test-is-not-broken-app:
+    needs: changes
+    if: ${{ needs.changes.outputs.is_not_broken_app == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build benches
+        run: RUSTFLAGS="-Awarnings" cargo bench --bench criterion -p is-not-broken-app

@@ -1,4 +1,4 @@
-use broken_app::{algo, sum_even,
+use is_not_broken_app::{algo, sum_even,
     sum_even_new_optimized,
     sum_even_with_hot_fix,
     sum_even_by_reference_app,
