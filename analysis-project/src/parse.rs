@@ -84,18 +84,17 @@ fn quote(input: &str) -> String {
     result.extend(
         input
             .chars()
-            .map(|c| match c {
+            .flat_map(|c| match c {
                 '\\' | '"' => ['\\', c].into_iter().take(2),
                 _ => [c, ' '].into_iter().take(1),
-            })
-            .flatten(),
+            }),
     );
     result.push('"');
     result
 }
 /// Распарсить строку, которую ранее [обернули в кавычки](quote)
 /// Возвращает (остаток_строки, распарсенное_значение)
-fn do_unquote<'a>(input: &'a str) -> Result<(&'a str, String), ()> {
+fn do_unquote(input: &str) -> Result<(&str, String), ()> {
     let mut result = String::new();
     let mut escaped_now = false;
     let mut chars = input.strip_prefix('"').ok_or(())?.chars();
@@ -117,7 +116,7 @@ fn do_unquote<'a>(input: &'a str) -> Result<(&'a str, String), ()> {
 }
 /// Распарсить строку, обёрную в кавычки
 /// (сокращённая версия [do_unquote], в которой вложенные кавычки не предусмотрены)
-fn do_unquote_non_escaped<'a>(input: &'a str) -> Result<(&'a str, String), ()> {
+fn do_unquote_non_escaped(input: &str) -> Result<(&str, String), ()> {
     let input = input.strip_prefix('"').ok_or(())?;
     let quote_byteidx = input.find('"').ok_or(())?;
     if quote_byteidx == 0 || input.as_bytes().get(quote_byteidx - 1) == Some(&b'\\') {
@@ -455,53 +454,41 @@ where
 
         // Пробуем все 6 перестановок
         // 0,1,2
-        if let Ok((r, a0)) = p0.parse(input) {
-            if let Ok((r, a1)) = p1.parse(r) {
-                if let Ok((r, a2)) = p2.parse(r) {
+        if let Ok((r, a0)) = p0.parse(input)
+            && let Ok((r, a1)) = p1.parse(r)
+                && let Ok((r, a2)) = p2.parse(r) {
                     return Ok((r, (a0, a1, a2)));
                 }
-            }
-        }
         // 0,2,1
-        if let Ok((r, a0)) = p0.parse(input) {
-            if let Ok((r, a2)) = p2.parse(r) {
-                if let Ok((r, a1)) = p1.parse(r) {
+        if let Ok((r, a0)) = p0.parse(input)
+            && let Ok((r, a2)) = p2.parse(r)
+                && let Ok((r, a1)) = p1.parse(r) {
                     return Ok((r, (a0, a1, a2)));
                 }
-            }
-        }
         // 1,0,2
-        if let Ok((r, a1)) = p1.parse(input) {
-            if let Ok((r, a0)) = p0.parse(r) {
-                if let Ok((r, a2)) = p2.parse(r) {
+        if let Ok((r, a1)) = p1.parse(input)
+            && let Ok((r, a0)) = p0.parse(r)
+                && let Ok((r, a2)) = p2.parse(r) {
                     return Ok((r, (a0, a1, a2)));
                 }
-            }
-        }
         // 1,2,0
-        if let Ok((r, a1)) = p1.parse(input) {
-            if let Ok((r, a2)) = p2.parse(r) {
-                if let Ok((r, a0)) = p0.parse(r) {
+        if let Ok((r, a1)) = p1.parse(input)
+            && let Ok((r, a2)) = p2.parse(r)
+                && let Ok((r, a0)) = p0.parse(r) {
                     return Ok((r, (a0, a1, a2)));
                 }
-            }
-        }
         // 2,0,1
-        if let Ok((r, a2)) = p2.parse(input) {
-            if let Ok((r, a0)) = p0.parse(r) {
-                if let Ok((r, a1)) = p1.parse(r) {
+        if let Ok((r, a2)) = p2.parse(input)
+            && let Ok((r, a0)) = p0.parse(r)
+                && let Ok((r, a1)) = p1.parse(r) {
                     return Ok((r, (a0, a1, a2)));
                 }
-            }
-        }
         // 2,1,0
-        if let Ok((r, a2)) = p2.parse(input) {
-            if let Ok((r, a1)) = p1.parse(r) {
-                if let Ok((r, a0)) = p0.parse(r) {
+        if let Ok((r, a2)) = p2.parse(input)
+            && let Ok((r, a1)) = p1.parse(r)
+                && let Ok((r, a0)) = p0.parse(r) {
                     return Ok((r, (a0, a1, a2)));
                 }
-            }
-        }
         Err(())
     }
 }
@@ -1106,14 +1093,14 @@ impl Parsable for SystemLogTraceKind {
                         strip_whitespace(tag("SendRequest")),
                         strip_whitespace(unquote()),
                     ),
-                    |request| SystemLogTraceKind::SendRequest(request),
+                    SystemLogTraceKind::SendRequest,
                 ),
                 map(
                     preceded(
                         strip_whitespace(tag("GetResponse")),
                         strip_whitespace(unquote()),
                     ),
-                    |response| SystemLogTraceKind::GetResponse(response),
+                    SystemLogTraceKind::GetResponse,
                 ),
             ),
         )
@@ -1165,14 +1152,14 @@ impl Parsable for AppLogErrorKind {
             alt2(
                 map(
                     preceded(strip_whitespace(tag("LackOf")), strip_whitespace(unquote())),
-                    |error| AppLogErrorKind::LackOf(error),
+                    AppLogErrorKind::LackOf,
                 ),
                 map(
                     preceded(
                         strip_whitespace(tag("SystemError")),
                         strip_whitespace(unquote()),
                     ),
-                    |error| AppLogErrorKind::SystemError(error),
+                    AppLogErrorKind::SystemError,
                 ),
             ),
         )
@@ -1212,28 +1199,28 @@ impl Parsable for AppLogTraceKind {
                         strip_whitespace(tag("Connect")),
                         strip_whitespace(AuthData::parser()),
                     ),
-                    |authdata| AppLogTraceKind::Connect(authdata),
+                    AppLogTraceKind::Connect,
                 ),
                 map(
                     preceded(
                         strip_whitespace(tag("SendRequest")),
                         strip_whitespace(unquote()),
                     ),
-                    |trace| AppLogTraceKind::SendRequest(trace),
+                    AppLogTraceKind::SendRequest,
                 ),
                 map(
                     preceded(
                         strip_whitespace(tag("Check")),
                         strip_whitespace(Announcements::parser()),
                     ),
-                    |announcements| AppLogTraceKind::Check(announcements),
+                    AppLogTraceKind::Check,
                 ),
                 map(
                     preceded(
                         strip_whitespace(tag("GetResponse")),
                         strip_whitespace(unquote()),
                     ),
-                    |trace| AppLogTraceKind::GetResponse(trace),
+                    AppLogTraceKind::GetResponse,
                 ),
             ),
         )
@@ -1353,19 +1340,19 @@ impl Parsable for AppLogJournalKind {
                 ),
                 map(
                     preceded(strip_whitespace(tag("DepositCash")), UserCash::parser()),
-                    |user_cash| AppLogJournalKind::DepositCash(user_cash),
+                    AppLogJournalKind::DepositCash,
                 ),
                 map(
                     preceded(strip_whitespace(tag("WithdrawCash")), UserCash::parser()),
-                    |user_cash| AppLogJournalKind::DepositCash(user_cash),
+                    AppLogJournalKind::DepositCash,
                 ),
                 map(
                     preceded(strip_whitespace(tag("BuyAsset")), UserBacket::parser()),
-                    |user_backet| AppLogJournalKind::BuyAsset(user_backet),
+                    AppLogJournalKind::BuyAsset,
                 ),
                 map(
                     preceded(strip_whitespace(tag("SellAsset")), UserBacket::parser()),
-                    |user_backet| AppLogJournalKind::SellAsset(user_backet),
+                    AppLogJournalKind::SellAsset,
                 ),
             ),
         )
