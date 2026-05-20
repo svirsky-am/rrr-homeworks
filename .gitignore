@@ -7,3 +7,7 @@ output
 .postgres_workdir
 .logs
 /target
+/target
+flamegraph.svg
+perf.data*
+.staff
