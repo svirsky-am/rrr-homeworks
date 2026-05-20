@@ -704,6 +704,8 @@ impl<T: Parser> Parser for Take<T> {
     type Dest = Vec<T::Dest>;
     fn parse<'a>(&self, mut input: &'a str) -> Result<(&'a str, Self::Dest), ()> {
         let mut result = Vec::with_capacity(self.count);
+        // тут нет смысла применять итератор, тк
+        // вся ленивость итератора «схлопывается» в один Vec<LogLine>. Разницы между «ленивым» и «жадным» выполнением нет.
         for _ in 0..self.count {
             let (new_remaining, new_result) = self.parser.parse(input)?;
             result.push(new_result);

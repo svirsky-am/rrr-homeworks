@@ -35,7 +35,7 @@ impl<R: std::io::Read + std::fmt::Debug + 'static> LogIterator<R> {
 impl<R: std::io::Read + std::fmt::Debug + 'static> Iterator for LogIterator<R> {
     type Item = parse::LogLine;
     fn next(&mut self) -> Option<Self::Item> {
-        // Фильтрация пустых строк перенесена сюда
+        // Фильтрация пустых строк и парсинг — внутри next(), как и положено итератору
         loop {
             let line = self.lines.next()?.ok()?;
             let trimmed = line.trim();
@@ -58,12 +58,11 @@ pub fn read_log<R: std::io::Read + std::fmt::Debug + 'static>(
     mode: u8,
     request_ids: Vec<u32>,
 ) -> Vec<LogLine> {
-    let logs = LogIterator::new(input);
-    logs.filter(|log| {
-        if !request_ids.is_empty() && !request_ids.contains(&log.request_id) {
-            return false;
-        }
-        match mode {
+    let request_set: std::collections::HashSet<u32> = request_ids.into_iter().collect();
+    
+    LogIterator::new(input)
+        .filter(|log| request_set.is_empty() || request_set.contains(&log.request_id))
+        .filter(|log| match mode {
             READ_MODE_ALL => true,
             READ_MODE_ERRORS => matches!(
                 &log.kind,
@@ -80,10 +79,9 @@ pub fn read_log<R: std::io::Read + std::fmt::Debug + 'static>(
                         | AppLogJournalKind::WithdrawCash(_)
                 ))
             ),
-            _ => false, // вместо panic возвращаем false для неизвестных режимов
-        }
-    })
-    .collect()
+            _ => false,  // вместо panic возвращаем false для неизвестных режимов
+        })
+        .collect()
 }
 
 #[cfg(test)]
