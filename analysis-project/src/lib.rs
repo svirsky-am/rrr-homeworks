@@ -34,19 +34,16 @@ impl<R: std::io::Read + std::fmt::Debug + 'static> LogIterator<R> {
 
 impl<R: std::io::Read + std::fmt::Debug + 'static> Iterator for LogIterator<R> {
     type Item = parse::LogLine;
+    
     fn next(&mut self) -> Option<Self::Item> {
-        // Фильтрация пустых строк и парсинг — внутри next(), как и положено итератору
-        loop {
-            let line = self.lines.next()?.ok()?;
+        self.lines.by_ref().find_map(|line_res| {
+            let line = line_res.ok()?;
             let trimmed = line.trim();
-            if trimmed.is_empty() {
-                continue;
-            }
-            let (remaining, result) = LOG_LINE_PARSER.parse(trimmed).ok()?;
-            if remaining.trim().is_empty() {
-                return Some(result);
-            }
-        }
+            if trimmed.is_empty() { return None; }
+            // Прямой вызов функции — никакого синглтона
+            let (remaining, result) = parse::parse_log_line(trimmed).ok()?;
+            remaining.trim().is_empty().then_some(result)
+        })
     }
 }
 
@@ -60,7 +57,8 @@ pub fn read_log<R: std::io::Read + std::fmt::Debug + 'static>(
 ) -> Vec<LogLine> {
     let request_set: std::collections::HashSet<u32> = request_ids.into_iter().collect();
     
-    LogIterator::new(input)
+    // явно указываем тип парамметра R через turbofish ::<R>
+    LogIterator::<R>::new(input)
         .filter(|log| request_set.is_empty() || request_set.contains(&log.request_id))
         .filter(|log| match mode {
             READ_MODE_ALL => true,
@@ -79,7 +77,7 @@ pub fn read_log<R: std::io::Read + std::fmt::Debug + 'static>(
                         | AppLogJournalKind::WithdrawCash(_)
                 ))
             ),
-            _ => false,  // вместо panic возвращаем false для неизвестных режимов
+            _ => false,
         })
         .collect()
 }
