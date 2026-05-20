@@ -1,1 +1,0 @@
-include scripts/module_5_fix_broken_app.mk

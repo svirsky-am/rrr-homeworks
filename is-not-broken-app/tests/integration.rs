@@ -1,4 +1,4 @@
-use broken_app::{algo, leak_buffer, normalize, sum_even, concurrency};
+use is_not_broken_app::{algo, leak_buffer, normalize, sum_even, concurrency};
 
 #[test]
 fn sums_even_numbers() {
@@ -68,7 +68,7 @@ fn normalize_simple() {
 fn averages_only_positive() {
     let nums = [-5, 5, 15];
     // Ожидается (5 + 15) / 2 = 10, но текущая реализация делит на все элементы.
-    assert!((broken_app::average_positive(&nums) - 10.0).abs() < f64::EPSILON);
+    assert!((is_not_broken_app::average_positive(&nums) - 10.0).abs() < f64::EPSILON);
 }
 
 #[test]

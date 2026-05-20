@@ -1,5 +1,5 @@
 
-use broken_app::{concurrency};
+use is_not_broken_app::{concurrency};
 
 fn main() {
     println!("Запуск race_increment(1_000, 4)...");

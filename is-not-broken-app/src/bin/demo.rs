@@ -1,4 +1,4 @@
-use broken_app::{algo, leak_buffer, normalize, sum_even};
+use is_not_broken_app::{algo, leak_buffer, normalize, sum_even};
 
 fn main() {
     let nums = [1, 2, 3, 4];

@@ -1,4 +1,4 @@
-use broken_app::{algo, sum_even};
+use is_not_broken_app::{algo, sum_even};
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 
 fn bench_sum_even(c: &mut Criterion) {

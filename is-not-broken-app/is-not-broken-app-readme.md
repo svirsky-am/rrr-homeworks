@@ -500,7 +500,7 @@ cargo test \
 Для запуска TSan оформим тестовое приложение `demo_for_threats`, использующее эти функции, т.к. тестовый фреймворк имеет свои ошибки при запуске TSan.
 
 ```rs
-use broken_app::{concurrency};
+use is_not_broken_app::{concurrency};
 
 fn main() {
 
@@ -906,16 +906,16 @@ popd
 
 ```sh
 # miri
-MIRIFLAGS="-Zmiri-backtrace=full -Awarnings"  cargo  miri test
+MIRIFLAGS="-Zmiri-backtrace=full -Awarnings"  cargo  miri test  -p is-not-broken-app
 # asan
-RUSTFLAGS="-Zsanitizer=address -Awarnings" cargo +nightly test \
+RUSTFLAGS="-Zsanitizer=address -Awarnings" cargo +nightly test -p is-not-broken-app \
             --target x86_64-unknown-linux-gnu
 # tsan
 RUSTFLAGS="-Zsanitizer=thread -Cunsafe-allow-abi-mismatch=sanitizer -Awarnings" \
-    cargo +nightly run --bin demo_for_threats \
+    cargo +nightly run --bin demo_for_threats -p is-not-broken-app \
 		--target x86_64-unknown-linux-gnu
 # бенчмарки
-RUSTFLAGS="-Awarnings" cargo bench --bench criterion
+RUSTFLAGS="-Awarnings" cargo bench --bench criterion -p is-not-broken-app
 ```
 
 Логи успешного финального прогона:
