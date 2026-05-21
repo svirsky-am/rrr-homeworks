@@ -11,12 +11,6 @@ pub const READ_MODE_ERRORS: u8 = 1;
 /// Режим чтения из логов только операций, касающихся деген
 pub const READ_MODE_EXCHANGES: u8 = 2;
 
-/// Для `Box<dyn много трейтов, помимо auto-трейтов>`, (`rustc E0225`)
-/// `only auto traits can be used as additional traits in a trait object`
-/// `consider creating a new trait with all of these as supertraits and using that trait here instead`
-pub trait MyReader: std::io::Read + std::fmt::Debug + 'static {}
-impl<T: std::io::Read + std::fmt::Debug + 'static> MyReader for T {}
-
 // подсказка: вместо trait-объекта можно дженерик
 /// Итератор, на выходе которого - строки распарсенной структуры данных
 #[derive(Debug)]
