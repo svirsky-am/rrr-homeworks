@@ -984,7 +984,7 @@ pub fn parse_as<T: Parsable>(input: &str) -> Result<(&str, T), ()> {
 #[derive(Debug, Clone, PartialEq)]
 pub enum LogKind {
     System(SystemLogKind),
-    App(AppLogKind),
+    App(Box<AppLogKind>), // Box для экономии стека
 }
 /// Все виды [системных](LogKind) логов
 #[derive(Debug, Clone, PartialEq)]
@@ -1008,7 +1008,7 @@ pub enum SystemLogErrorKind {
 #[derive(Debug, Clone, PartialEq)]
 pub enum AppLogKind {
     Error(AppLogErrorKind),
-    Trace(AppLogTraceKind),
+    Trace(Box<AppLogTraceKind>), // Box для экономии стека
     Journal(AppLogJournalKind),
 }
 /// Error [приложения](AppLogKind)
@@ -1021,7 +1021,7 @@ pub enum AppLogErrorKind {
 /// Trace [приложения](AppLogKind)
 #[derive(Debug, Clone, PartialEq)]
 pub enum AppLogTraceKind {
-    Connect(AuthData),
+    Connect(Box<AuthData>), // AuthData = 1KB, обязательно Box
     SendRequest(String),
     Check(Announcements),
     GetResponse(String),
@@ -1213,12 +1213,13 @@ impl Parsable for AppLogTraceKind {
         preceded(
             tag("Trace"),
             alt4(
+                //   Оборачиваем AuthData в Box
                 map(
                     preceded(
                         strip_whitespace(tag("Connect")),
                         strip_whitespace(AuthData::parser()),
                     ),
-                    AppLogTraceKind::Connect,
+                    |authdata| AppLogTraceKind::Connect(Box::new(authdata)),
                 ),
                 map(
                     preceded(
@@ -1398,12 +1399,16 @@ impl Parsable for AppLogKind {
             tag("App::"),
             alt3(
                 map(AppLogErrorKind::parser(), AppLogKind::Error),
-                map(AppLogTraceKind::parser(), AppLogKind::Trace),
+                // Оборачиваем Trace в Box
+                map(AppLogTraceKind::parser(), |trace| {
+                    AppLogKind::Trace(Box::new(trace))
+                }),
                 map(AppLogJournalKind::parser(), AppLogKind::Journal),
             ),
         ))
     }
 }
+
 impl Parsable for LogKind {
     type Parser = StripWhitespace<
         Alt<(
@@ -1414,7 +1419,7 @@ impl Parsable for LogKind {
     fn parser() -> Self::Parser {
         strip_whitespace(alt2(
             map(SystemLogKind::parser(), LogKind::System),
-            map(AppLogKind::parser(), LogKind::App),
+            map(AppLogKind::parser(), |app| LogKind::App(Box::new(app))),
         ))
     }
 }
@@ -1685,14 +1690,16 @@ mod test {
             ),
             Ok((
                 "",
-                LogKind::App(AppLogKind::Journal(AppLogJournalKind::CreateUser {
-                    user_id: "Steeve".into(),
-                    authorized_capital: nz(10_000), // NonZeroU32
-                }))
+                LogKind::App(Box::new(AppLogKind::Journal(
+                    AppLogJournalKind::CreateUser {
+                        user_id: "Steeve".into(),
+                        authorized_capital: nz(10_000), // NonZeroU32
+                    }
+                )))
             ))
         );
 
         assert_eq!(LogKind::parser().parse(r#"App::Journal BuyAsset UserBacket{"user_id": "Steeve", "backet": Backet{"asset_id":"bayc","count":1,},}"#), 
-            Ok(("", LogKind::App(AppLogKind::Journal(AppLogJournalKind::BuyAsset(UserBacket{user_id: "Steeve".into(), backet: Backet{asset_id: "bayc".into(),count: nz(1)}}))))));
+            Ok(("", LogKind::App(Box::new(AppLogKind::Journal(AppLogJournalKind::BuyAsset(UserBacket{user_id: "Steeve".into(), backet: Backet{asset_id: "bayc".into(),count: nz(1)}})))))));
     }
 }
