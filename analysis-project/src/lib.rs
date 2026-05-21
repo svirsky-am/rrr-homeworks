@@ -47,8 +47,6 @@ impl<R: std::io::Read + std::fmt::Debug + 'static> Iterator for LogIterator<R> {
     }
 }
 
-// подсказка: можно обойтись итераторами
-// подсказка: лучше match
 /// Принимает поток байт, отдаёт отфильтрованные и распарсенные логи
 pub fn read_log<R: std::io::Read + std::fmt::Debug + 'static>(
     input: R,
@@ -64,21 +62,25 @@ pub fn read_log<R: std::io::Read + std::fmt::Debug + 'static>(
         })
         .filter(|log| match mode {
             READ_MODE_ALL => true,
-            READ_MODE_ERRORS => matches!(
-                &log.kind,
-                LogKind::System(SystemLogKind::Error(_)) | LogKind::App(AppLogKind::Error(_))
-            ),
-            READ_MODE_EXCHANGES => matches!(
-                &log.kind,
-                LogKind::App(AppLogKind::Journal(
-                    AppLogJournalKind::BuyAsset(_)
-                        | AppLogJournalKind::SellAsset(_)
-                        | AppLogJournalKind::CreateUser { .. }
-                        | AppLogJournalKind::RegisterAsset { .. }
-                        | AppLogJournalKind::DepositCash(_)
-                        | AppLogJournalKind::WithdrawCash(_)
-                ))
-            ),
+            READ_MODE_ERRORS => match &log.kind {
+                LogKind::System(SystemLogKind::Error(_)) => true,
+                LogKind::App(app) => matches!(app.as_ref(), AppLogKind::Error(_)),
+                _ => false,
+            },
+            READ_MODE_EXCHANGES => match &log.kind {
+                LogKind::App(app) => matches!(
+                    app.as_ref(),
+                    AppLogKind::Journal(
+                        AppLogJournalKind::BuyAsset(_)
+                            | AppLogJournalKind::SellAsset(_)
+                            | AppLogJournalKind::CreateUser { .. }
+                            | AppLogJournalKind::RegisterAsset { .. }
+                            | AppLogJournalKind::DepositCash(_)
+                            | AppLogJournalKind::WithdrawCash(_)
+                    )
+                ),
+                _ => false,
+            },
             _ => false,
         })
         .collect()
