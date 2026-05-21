@@ -18,6 +18,10 @@ jobs:
     outputs:
       core_changed: ${{ steps.filter.outputs.core }}
       streaming_changed: ${{ steps.filter.outputs.streaming }}
+      blogproject: ${{ steps.filter.outputs.blogproject }}
+      image_ffi_project: ${{ steps.filter.outputs.image_ffi_project }}
+      is_not_broken_app: ${{ steps.filter.outputs.is_not_broken_app }}
+      analysis_project: ${{ steps.filter.outputs.analysis_project }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -47,6 +51,10 @@ jobs:
               - 'Cargo.lock'
             is_not_broken_app:
               - 'is-not-broken-app/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+            analysis_project:
+              - 'analysis-project/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
   # Job 1: Build & test core crates (rr-parser-lib + rr-file-processor)
@@ -127,3 +135,15 @@ jobs:
 
       - name: Build benches
         run: RUSTFLAGS="-Awarnings" cargo bench --bench criterion -p is-not-broken-app
+  
+  # Job 6: Build & test "analysis_project"
+  build-and-test-analysis-project:
+    needs: changes
+    if: ${{ needs.changes.outputs.analysis_project == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and test
+        run: cargo test -p analysis
+
