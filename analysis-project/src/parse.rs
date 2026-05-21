@@ -17,7 +17,6 @@ use std::num::{NonZeroU32, NonZeroI32};
 mod stdp {
     use super::*;
     use super::Parser;
-    use std::num::{NonZeroU32, NonZeroI32};
 
     /// Беззнаковые числа (только ненулевые)
     #[derive(Debug)]
