@@ -1,7 +1,6 @@
 pub mod parse;
-use std::io::BufRead;
-
 use parse::*;
+use std::io::BufRead;
 
 // подсказка: лучше использовать enum и match
 /// Режим чтения из логов всего подряд
@@ -28,15 +27,22 @@ impl<R: std::io::Read + std::fmt::Debug + 'static> LogIterator<R> {
 
 impl<R: std::io::Read + std::fmt::Debug + 'static> Iterator for LogIterator<R> {
     type Item = parse::LogLine;
-    
+
     fn next(&mut self) -> Option<Self::Item> {
         self.lines.by_ref().find_map(|line_res| {
             let line = line_res.ok()?;
             let trimmed = line.trim();
-            if trimmed.is_empty() { return None; }
-            // Прямой вызов функции — никакого синглтона
-            let (remaining, result) = parse::parse_log_line(trimmed).ok()?;
-            remaining.trim().is_empty().then_some(result)
+            // match вместо if/else
+            match trimmed.is_empty() {
+                true => None,
+                false => {
+                    let (remaining, result) = parse::parse_log_line(trimmed).ok()?;
+                    match remaining.trim().is_empty() {
+                        true => Some(result),
+                        false => None,
+                    }
+                }
+            }
         })
     }
 }
@@ -50,10 +56,12 @@ pub fn read_log<R: std::io::Read + std::fmt::Debug + 'static>(
     request_ids: Vec<u32>,
 ) -> Vec<LogLine> {
     let request_set: std::collections::HashSet<u32> = request_ids.into_iter().collect();
-    
-    // явно указываем тип парамметра R через turbofish ::<R>
+
     LogIterator::<R>::new(input)
-        .filter(|log| request_set.is_empty() || request_set.contains(&log.request_id))
+        .filter(|log| match request_set.is_empty() {
+            true => true,
+            false => request_set.contains(&log.request_id),
+        })
         .filter(|log| match mode {
             READ_MODE_ALL => true,
             READ_MODE_ERRORS => matches!(
