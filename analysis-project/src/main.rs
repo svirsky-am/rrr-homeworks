@@ -1,9 +1,12 @@
+use analysis::parse::Announcements;
+
 fn main() {
     println!("Placeholder для экспериментов с cli");
 
     let parsing_demo = r#"[UserBackets{"user_id":"Bob","backets":[Backet{"asset_id":"milk","count":3,},],},]"#.to_string();
     // just_parse_anouncements теперь возвращает (&str, T), берём .1
-    let announcements = analysis::parse::just_parse_anouncements(&parsing_demo).unwrap().1;
+    // 🔥 Дженерик вместо 6 одинаковых обёрток
+    let announcements = analysis::parse::parse_as::<Announcements>(&parsing_demo).unwrap().1;
     println!("demo-parsed: {:?}", announcements);
 
     let args = std::env::args().collect::<Vec<_>>();

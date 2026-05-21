@@ -957,31 +957,10 @@ impl Parsable for Announcements {
     }
 }
 
-// просто обёртки
-// подсказка: почему бы не заменить на один дженерик?
-/// Обёртка для парсинга [AssetDsc]
-pub fn just_parse_asset_dsc(input: &str) -> Result<(&str, AssetDsc), ()> {
-    <AssetDsc as Parsable>::parser().parse(input)
-}
-/// Обёртка для парсинга [Backet]
-pub fn just_parse_backet(input: &str) -> Result<(&str, Backet), ()> {
-    <Backet as Parsable>::parser().parse(input)
-}
-/// Обёртка для парсинга [UserCash]
-pub fn just_user_cash(input: &str) -> Result<(&str, UserCash), ()> {
-    <UserCash as Parsable>::parser().parse(input)
-}
-/// Обёртка для парсинга [UserBacket]
-pub fn just_user_backet(input: &str) -> Result<(&str, UserBacket), ()> {
-    <UserBacket as Parsable>::parser().parse(input)
-}
-/// Обёртка для парсинга [UserBackets]
-pub fn just_user_backets(input: &str) -> Result<(&str, UserBackets), ()> {
-    <UserBackets as Parsable>::parser().parse(input)
-}
-/// Обёртка для парсинга [Announcements]
-pub fn just_parse_anouncements(input: &str) -> Result<(&str, Announcements), ()> {
-    <Announcements as Parsable>::parser().parse(input)
+/// + Универсальная обёртка для парсинга любого типа, реализующего [Parsable]
+/// Заменяет 6 дублирующихся функций `just_parse_*`
+pub fn parse_as<T: Parsable>(input: &str) -> Result<(&str, T), ()> {
+    <T as Parsable>::parser().parse(input)
 }
 
 /// Все виды логов
