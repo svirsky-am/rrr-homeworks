@@ -11,12 +11,11 @@ trait Parsable: Sized {
     fn parser() -> Self::Parser;
 }
 
-use std::num::{NonZeroU32, NonZeroI32};
-
+use std::num::{NonZeroI32, NonZeroU32};
 
 mod stdp {
-    use super::*;
     use super::Parser;
+    use super::*;
 
     /// Беззнаковые числа (только ненулевые)
     #[derive(Debug)]
@@ -24,76 +23,104 @@ mod stdp {
     impl Parser for U32 {
         type Dest = NonZeroU32;
         fn parse<'a>(&self, input: &'a str) -> Result<(&'a str, Self::Dest), ()> {
-            let (remaining, is_hex) = input
-                .strip_prefix("0x")
-                .map_or((input, false), |rem| (rem, true));
-            let end_idx = remaining
+            let (remaining, is_hex) = match input.strip_prefix("0x") {
+                Some(rem) => (rem, true),
+                None => (input, false),
+            };
+            let end_idx = match remaining
                 .char_indices()
                 .find_map(|(idx, c)| match (is_hex, c) {
                     (true, 'a'..='f' | '0'..='9' | 'A'..='F') => None,
                     (false, '0'..='9') => None,
                     _ => Some(idx),
-                })
-                .unwrap_or(remaining.len());
-            let value = u32::from_str_radix(&remaining[..end_idx], if is_hex { 16 } else { 10 })
-                .map_err(|_| ())?;
+                }) {
+                Some(idx) => idx,
+                None => remaining.len(),
+            };
+            let value = u32::from_str_radix(
+                &remaining[..end_idx],
+                match is_hex {
+                    true => 16,
+                    false => 10,
+                },
+            )
+            .map_err(|_| ())?;
             //  Валидация через тип: ноль = ошибка
-            NonZeroU32::new(value).ok_or(()).map(|nz| (&remaining[end_idx..], nz))
+            NonZeroU32::new(value)
+                .ok_or(())
+                .map(|nz| (&remaining[end_idx..], nz))
         }
     }
-
     /// Знаковые числа (только ненулевые)
     #[derive(Debug)]
     pub struct I32;
     impl Parser for I32 {
         type Dest = NonZeroI32;
         fn parse<'a>(&self, input: &'a str) -> Result<(&'a str, Self::Dest), ()> {
-            let end_idx = input
-                .char_indices()
-                .skip(1)
-                .find_map(|(idx, c)| (!c.is_ascii_digit()).then_some(idx))
-                .unwrap_or(input.len());
+            let end_idx =
+                match input
+                    .char_indices()
+                    .skip(1)
+                    .find_map(|(idx, c)| match c.is_ascii_digit() {
+                        true => None,
+                        false => Some(idx),
+                    }) {
+                    Some(idx) => idx,
+                    None => input.len(),
+                };
             let value = input[..end_idx].parse::<i32>().map_err(|_| ())?;
-            NonZeroI32::new(value).ok_or(()).map(|nz| (&input[end_idx..], nz))
+            NonZeroI32::new(value)
+                .ok_or(())
+                .map(|nz| (&input[end_idx..], nz))
         }
     }
-
-        /// Беззнаковые числа (ноль допустим) — для request_id и подобных полей
+    /// Беззнаковые числа (ноль допустим) — для request_id и подобных полей
     #[derive(Debug, Clone)]
     pub struct U32Any;
     impl Parser for U32Any {
         type Dest = u32;
         fn parse<'a>(&self, input: &'a str) -> Result<(&'a str, Self::Dest), ()> {
-            let (remaining, is_hex) = input
-                .strip_prefix("0x")
-                .map_or((input, false), |rem| (rem, true));
-            let end_idx = remaining
+            let (remaining, is_hex) = match input.strip_prefix("0x") {
+                Some(rem) => (rem, true),
+                None => (input, false),
+            };
+            let end_idx = match remaining
                 .char_indices()
                 .find_map(|(idx, c)| match (is_hex, c) {
                     (true, 'a'..='f' | '0'..='9' | 'A'..='F') => None,
                     (false, '0'..='9') => None,
                     _ => Some(idx),
-                })
-                .unwrap_or(remaining.len());
-            u32::from_str_radix(&remaining[..end_idx], if is_hex { 16 } else { 10 })
-                .map_err(|_| ())
-                .map(|value| (&remaining[end_idx..], value))
+                }) {
+                Some(idx) => idx,
+                None => remaining.len(),
+            };
+            u32::from_str_radix(
+                &remaining[..end_idx],
+                match is_hex {
+                    true => 16,
+                    false => 10,
+                },
+            )
+            .map_err(|_| ())
+            .map(|value| (&remaining[end_idx..], value))
         }
     }
-
     /// Шестнадцатеричные байты (пригодится при парсинге блобов)
     #[derive(Debug, Clone)]
     pub struct Byte;
     impl Parser for Byte {
         type Dest = u8;
         fn parse<'a>(&self, input: &'a str) -> Result<(&'a str, Self::Dest), ()> {
-            let end_idx = if input.len() >= 2 && input[..2].chars().all(|c| c.is_ascii_hexdigit()) {
-                2
-            } else {
-                return Err(());
-            };
-            let value = u8::from_str_radix(&input[..end_idx], 16).map_err(|_| ())?;
-            Ok((&input[end_idx..], value))
+            match (
+                input.len() >= 2,
+                input[..2].chars().all(|c| c.is_ascii_hexdigit()),
+            ) {
+                (true, true) => {
+                    let value = u8::from_str_radix(&input[..2], 16).map_err(|_| ())?;
+                    Ok((&input[2..], value))
+                }
+                _ => Err(()),
+            }
         }
     }
 }
@@ -101,14 +128,10 @@ mod stdp {
 /// Обернуть строку в кавычки, экранировав кавычки, которые в строке уже есть
 fn quote(input: &str) -> String {
     let mut result = String::from("\"");
-    result.extend(
-        input
-            .chars()
-            .flat_map(|c| match c {
-                '\\' | '"' => ['\\', c].into_iter().take(2),
-                _ => [c, ' '].into_iter().take(1),
-            }),
-    );
+    result.extend(input.chars().flat_map(|c| match c {
+        '\\' | '"' => ['\\', c].into_iter().take(2),
+        _ => [c, ' '].into_iter().take(1),
+    }));
     result.push('"');
     result
 }
@@ -117,7 +140,10 @@ fn quote(input: &str) -> String {
 fn do_unquote(input: &str) -> Result<(&str, String), ()> {
     let mut result = String::new();
     let mut escaped_now = false;
-    let mut chars = input.strip_prefix('"').ok_or(())?.chars();
+    let mut chars = match input.strip_prefix('"') {
+        Some(s) => s.chars(),
+        None => return Err(()),
+    };
     while let Some(c) = chars.next() {
         match (c, escaped_now) {
             ('"' | '\\', true) => {
@@ -137,15 +163,21 @@ fn do_unquote(input: &str) -> Result<(&str, String), ()> {
 /// Распарсить строку, обёрную в кавычки
 /// (сокращённая версия [do_unquote], в которой вложенные кавычки не предусмотрены)
 fn do_unquote_non_escaped(input: &str) -> Result<(&str, String), ()> {
-    let input = input.strip_prefix('"').ok_or(())?;
-    let quote_byteidx = input.find('"').ok_or(())?;
-    if quote_byteidx == 0 || input.as_bytes().get(quote_byteidx - 1) == Some(&b'\\') {
-        return Err(());
+    let input = match input.strip_prefix('"') {
+        Some(s) => s,
+        None => return Err(()),
+    };
+    let quote_byteidx = match input.find('"') {
+        Some(idx) => idx,
+        None => return Err(()),
+    };
+    match (quote_byteidx == 0, input.as_bytes().get(quote_byteidx - 1)) {
+        (true, _) | (_, Some(&b'\\')) => Err(()),
+        _ => Ok((
+            &input[1 + quote_byteidx..],
+            input[..quote_byteidx].to_string(),
+        )),
     }
-    Ok((
-        &input[1 + quote_byteidx..],
-        input[..quote_byteidx].to_string(),
-    ))
 }
 /// Парсер кавычек
 #[derive(Debug, Clone)]
@@ -179,7 +211,10 @@ struct Tag {
 impl Parser for Tag {
     type Dest = ();
     fn parse<'a>(&self, input: &'a str) -> Result<(&'a str, Self::Dest), ()> {
-        input.strip_prefix(self.tag).map(|rem| (rem, ())).ok_or(())
+        match input.strip_prefix(self.tag) {
+            Some(rem) => Ok((rem, ())),
+            None => Err(()),
+        }
     }
 }
 /// Конструктор [Tag]
@@ -193,10 +228,10 @@ impl Parser for QuotedTag {
     type Dest = ();
     fn parse<'a>(&self, input: &'a str) -> Result<(&'a str, Self::Dest), ()> {
         let (remaining, candidate) = do_unquote_non_escaped(input)?;
-        if !self.0.parse(candidate.as_str())?.0.is_empty() {
-            return Err(());
+        match self.0.parse(candidate.as_str())?.0.is_empty() {
+            true => Ok((remaining, ())),
+            false => Err(()),
         }
-        Ok((remaining, ()))
     }
 }
 /// Конструктор [QuotedTag]
@@ -468,48 +503,30 @@ where
 {
     type Dest = (A0::Dest, A1::Dest, A2::Dest);
     fn parse<'a>(&self, input: &'a str) -> Result<(&'a str, Self::Dest), ()> {
-        let p0 = &self.parsers.0;
-        let p1 = &self.parsers.1;
-        let p2 = &self.parsers.2;
-
         // Пробуем все 6 перестановок
         // 0,1,2
-        if let Ok((r, a0)) = p0.parse(input)
-            && let Ok((r, a1)) = p1.parse(r)
-                && let Ok((r, a2)) = p2.parse(r) {
-                    return Ok((r, (a0, a1, a2)));
-                }
-        // 0,2,1
-        if let Ok((r, a0)) = p0.parse(input)
-            && let Ok((r, a2)) = p2.parse(r)
-                && let Ok((r, a1)) = p1.parse(r) {
-                    return Ok((r, (a0, a1, a2)));
-                }
-        // 1,0,2
-        if let Ok((r, a1)) = p1.parse(input)
-            && let Ok((r, a0)) = p0.parse(r)
-                && let Ok((r, a2)) = p2.parse(r) {
-                    return Ok((r, (a0, a1, a2)));
-                }
-        // 1,2,0
-        if let Ok((r, a1)) = p1.parse(input)
-            && let Ok((r, a2)) = p2.parse(r)
-                && let Ok((r, a0)) = p0.parse(r) {
-                    return Ok((r, (a0, a1, a2)));
-                }
-        // 2,0,1
-        if let Ok((r, a2)) = p2.parse(input)
-            && let Ok((r, a0)) = p0.parse(r)
-                && let Ok((r, a1)) = p1.parse(r) {
-                    return Ok((r, (a0, a1, a2)));
-                }
-        // 2,1,0
-        if let Ok((r, a2)) = p2.parse(input)
-            && let Ok((r, a1)) = p1.parse(r)
-                && let Ok((r, a0)) = p0.parse(r) {
-                    return Ok((r, (a0, a1, a2)));
-                }
-        Err(())
+        let (p0, p1, p2) = (&self.parsers.0, &self.parsers.1, &self.parsers.2);
+        match (p0.parse(input), p1.parse(input), p2.parse(input)) {
+            (Ok((r, a0)), _, _) => match p1.parse(r) {
+                Ok((r, a1)) => p2.parse(r).map(|(r, a2)| (r, (a0, a1, a2))),
+                Err(()) => p2
+                    .parse(r)
+                    .and_then(|(r, a2)| p1.parse(r).map(|(r, a1)| (r, (a0, a1, a2)))),
+            },
+            (Err(_), Ok((r, a1)), _) => match p0.parse(r) {
+                Ok((r, a0)) => p2.parse(r).map(|(r, a2)| (r, (a0, a1, a2))),
+                Err(()) => p2
+                    .parse(r)
+                    .and_then(|(r, a2)| p0.parse(r).map(|(r, a0)| (r, (a0, a1, a2)))),
+            },
+            (Err(_), Err(_), Ok((r, a2))) => match p0.parse(r) {
+                Ok((r, a0)) => p1.parse(r).map(|(r, a1)| (r, (a0, a1, a2))),
+                Err(()) => p1
+                    .parse(r)
+                    .and_then(|(r, a1)| p0.parse(r).map(|(r, a0)| (r, (a0, a1, a2)))),
+            },
+            _ => Err(()),
+        }
     }
 }
 /// Конструктор [Permutation] для трёх парсеров
@@ -535,23 +552,24 @@ impl<T: Parser> Parser for List<T> {
     type Dest = Vec<T::Dest>;
     fn parse<'a>(&self, mut input: &'a str) -> Result<(&'a str, Self::Dest), ()> {
         input = input.trim_start();
-        let mut remaining = input.strip_prefix('[').ok_or(())?.trim_start();
+        let mut remaining = match input.strip_prefix('[') {
+            Some(s) => s.trim_start(),
+            None => return Err(()),
+        };
         let mut result = Vec::new();
-
-        while !remaining.is_empty() {
-            if let Some(rem) = remaining.strip_prefix(']') {
-                return Ok((rem.trim_start(), result));
+        loop {
+            match remaining.strip_prefix(']') {
+                Some(rem) => return Ok((rem.trim_start(), result)),
+                None => {
+                    let (new_remaining, item) = self.parser.parse(remaining)?;
+                    remaining = match new_remaining.trim_start().strip_prefix(',') {
+                        Some(s) => s.trim_start(),
+                        None => return Err(()),
+                    };
+                    result.push(item);
+                }
             }
-            let (new_remaining, item) = self.parser.parse(remaining)?;
-            let new_remaining = new_remaining
-                .trim_start()
-                .strip_prefix(',')
-                .ok_or(())?
-                .trim_start();
-            result.push(item);
-            remaining = new_remaining;
         }
-        Err(()) // строка кончилась, не закрыв скобку
     }
 }
 /// Конструктор для [List]
@@ -573,10 +591,10 @@ where
 {
     type Dest = Dest;
     fn parse<'a>(&self, input: &'a str) -> Result<(&'a str, Self::Dest), ()> {
-        if let Ok(ok) = self.parser.0.parse(input) {
-            return Ok(ok);
+        match self.parser.0.parse(input) {
+            Ok(ok) => Ok(ok),
+            Err(()) => self.parser.1.parse(input),
         }
-        self.parser.1.parse(input)
     }
 }
 /// Конструктор [Alt] для двух парсеров
@@ -592,13 +610,13 @@ where
 {
     type Dest = Dest;
     fn parse<'a>(&self, input: &'a str) -> Result<(&'a str, Self::Dest), ()> {
-        if let Ok(ok) = self.parser.0.parse(input) {
-            return Ok(ok);
+        match self.parser.0.parse(input) {
+            Ok(ok) => Ok(ok),
+            Err(()) => match self.parser.1.parse(input) {
+                Ok(ok) => Ok(ok),
+                Err(()) => self.parser.2.parse(input),
+            },
         }
-        if let Ok(ok) = self.parser.1.parse(input) {
-            return Ok(ok);
-        }
-        self.parser.2.parse(input)
     }
 }
 /// Конструктор [Alt] для трёх парсеров
@@ -621,16 +639,16 @@ where
 {
     type Dest = Dest;
     fn parse<'a>(&self, input: &'a str) -> Result<(&'a str, Self::Dest), ()> {
-        if let Ok(ok) = self.parser.0.parse(input) {
-            return Ok(ok);
+        match self.parser.0.parse(input) {
+            Ok(ok) => Ok(ok),
+            Err(()) => match self.parser.1.parse(input) {
+                Ok(ok) => Ok(ok),
+                Err(()) => match self.parser.2.parse(input) {
+                    Ok(ok) => Ok(ok),
+                    Err(()) => self.parser.3.parse(input),
+                },
+            },
         }
-        if let Ok(ok) = self.parser.1.parse(input) {
-            return Ok(ok);
-        }
-        if let Ok(ok) = self.parser.2.parse(input) {
-            return Ok(ok);
-        }
-        self.parser.3.parse(input)
     }
 }
 /// Конструктор [Alt] для четырёх парсеров
@@ -664,28 +682,28 @@ where
 {
     type Dest = Dest;
     fn parse<'a>(&self, input: &'a str) -> Result<(&'a str, Self::Dest), ()> {
-        if let Ok(ok) = self.parser.0.parse(input) {
-            return Ok(ok);
+        match self.parser.0.parse(input) {
+            Ok(ok) => Ok(ok),
+            Err(()) => match self.parser.1.parse(input) {
+                Ok(ok) => Ok(ok),
+                Err(()) => match self.parser.2.parse(input) {
+                    Ok(ok) => Ok(ok),
+                    Err(()) => match self.parser.3.parse(input) {
+                        Ok(ok) => Ok(ok),
+                        Err(()) => match self.parser.4.parse(input) {
+                            Ok(ok) => Ok(ok),
+                            Err(()) => match self.parser.5.parse(input) {
+                                Ok(ok) => Ok(ok),
+                                Err(()) => match self.parser.6.parse(input) {
+                                    Ok(ok) => Ok(ok),
+                                    Err(()) => self.parser.7.parse(input),
+                                },
+                            },
+                        },
+                    },
+                },
+            },
         }
-        if let Ok(ok) = self.parser.1.parse(input) {
-            return Ok(ok);
-        }
-        if let Ok(ok) = self.parser.2.parse(input) {
-            return Ok(ok);
-        }
-        if let Ok(ok) = self.parser.3.parse(input) {
-            return Ok(ok);
-        }
-        if let Ok(ok) = self.parser.4.parse(input) {
-            return Ok(ok);
-        }
-        if let Ok(ok) = self.parser.5.parse(input) {
-            return Ok(ok);
-        }
-        if let Ok(ok) = self.parser.6.parse(input) {
-            return Ok(ok);
-        }
-        self.parser.7.parse(input)
     }
 }
 /// Конструктор [Alt] для восьми парсеров
@@ -715,7 +733,7 @@ fn alt8<
     }
 }
 
-/// Комбинатор Take (применить парсер N раз)
+/// Комбинатор для применения дочернего парсера N раз
 struct Take<T> {
     count: usize,
     parser: T,
@@ -819,7 +837,7 @@ impl Parsable for AssetDsc {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Backet {
     pub asset_id: String,
-    pub count: NonZeroU32,  // было: u32
+    pub count: NonZeroU32, // было: u32
 }
 impl Parsable for Backet {
     type Parser = Map<
@@ -828,7 +846,7 @@ impl Parsable for Backet {
             Permutation<(KeyValue<Unquote>, KeyValue<stdp::U32>)>,
             StripWhitespace<Tag>,
         >,
-        fn((String, NonZeroU32)) -> Self,  // обновлена сигнатура
+        fn((String, NonZeroU32)) -> Self,
     >;
     fn parser() -> Self::Parser {
         map(
@@ -836,7 +854,7 @@ impl Parsable for Backet {
                 all2(strip_whitespace(tag("Backet")), strip_whitespace(tag("{"))),
                 permutation2(
                     key_value("asset_id", unquote()),
-                    key_value("count", stdp::U32),  // stdp::U32 теперь возвращает NonZeroU32
+                    key_value("count", stdp::U32), // stdp::U32 теперь возвращает NonZeroU32
                 ),
                 strip_whitespace(tag("}")),
             ),
@@ -848,7 +866,7 @@ impl Parsable for Backet {
 #[derive(Debug, Clone, PartialEq)]
 pub struct UserCash {
     pub user_id: String,
-    pub count: NonZeroU32,  //  было: u32
+    pub count: NonZeroU32, //  было: u32
 }
 impl Parsable for UserCash {
     type Parser = Map<
@@ -1013,20 +1031,26 @@ pub enum AppLogTraceKind {
 pub enum AppLogJournalKind {
     CreateUser {
         user_id: String,
-        authorized_capital: NonZeroU32,  // было: u32
+        authorized_capital: NonZeroU32, // было: u32
     },
-    DeleteUser { user_id: String },
+    DeleteUser {
+        user_id: String,
+    },
     RegisterAsset {
         asset_id: String,
         user_id: String,
-        liquidity: NonZeroU32,  // было: u32
+        liquidity: NonZeroU32, // было: u32
     },
-    UnregisterAsset { asset_id: String, user_id: String },
+    UnregisterAsset {
+        asset_id: String,
+        user_id: String,
+    },
     DepositCash(UserCash),
     WithdrawCash(UserCash),
     BuyAsset(UserBacket),
     SellAsset(UserBacket),
 }
+
 // === Реализации Parsable для всех видов логов ===
 
 impl Parsable for SystemLogErrorKind {
@@ -1231,7 +1255,7 @@ impl Parsable for AppLogJournalKind {
                     StripWhitespace<Tag>,
                     Delimited<Tag, Permutation<(KeyValue<Unquote>, KeyValue<stdp::U32>)>, Tag>,
                 >,
-                fn((String, NonZeroU32)) -> AppLogJournalKind,  // u32 → NonZeroU32
+                fn((String, NonZeroU32)) -> AppLogJournalKind, // u32 → NonZeroU32
             >,
             // DeleteUser: String
             Map<
@@ -1248,7 +1272,7 @@ impl Parsable for AppLogJournalKind {
                         Tag,
                     >,
                 >,
-                fn((String, String, NonZeroU32)) -> AppLogJournalKind,  //  
+                fn((String, String, NonZeroU32)) -> AppLogJournalKind,
             >,
             // UnregisterAsset: (String, String)
             Map<
@@ -1259,13 +1283,24 @@ impl Parsable for AppLogJournalKind {
                 fn((String, String)) -> AppLogJournalKind,
             >,
             // DepositCash / WithdrawCash / BuyAsset / SellAsset — без изменений
-            Map<Preceded<StripWhitespace<Tag>, <UserCash as Parsable>::Parser>, fn(UserCash) -> AppLogJournalKind>,
-            Map<Preceded<StripWhitespace<Tag>, <UserCash as Parsable>::Parser>, fn(UserCash) -> AppLogJournalKind>,
-            Map<Preceded<StripWhitespace<Tag>, <UserBacket as Parsable>::Parser>, fn(UserBacket) -> AppLogJournalKind>,
-            Map<Preceded<StripWhitespace<Tag>, <UserBacket as Parsable>::Parser>, fn(UserBacket) -> AppLogJournalKind>,
+            Map<
+                Preceded<StripWhitespace<Tag>, <UserCash as Parsable>::Parser>,
+                fn(UserCash) -> AppLogJournalKind,
+            >,
+            Map<
+                Preceded<StripWhitespace<Tag>, <UserCash as Parsable>::Parser>,
+                fn(UserCash) -> AppLogJournalKind,
+            >,
+            Map<
+                Preceded<StripWhitespace<Tag>, <UserBacket as Parsable>::Parser>,
+                fn(UserBacket) -> AppLogJournalKind,
+            >,
+            Map<
+                Preceded<StripWhitespace<Tag>, <UserBacket as Parsable>::Parser>,
+                fn(UserBacket) -> AppLogJournalKind,
+            >,
         )>,
     >;
-    
     fn parser() -> Self::Parser {
         preceded(
             tag("Journal"),
@@ -1284,7 +1319,7 @@ impl Parsable for AppLogJournalKind {
                     ),
                     |(user_id, authorized_capital)| AppLogJournalKind::CreateUser {
                         user_id,
-                        authorized_capital,  // теперь это NonZeroU32
+                        authorized_capital, // теперь это NonZeroU32
                     },
                 ),
                 map(
@@ -1310,7 +1345,7 @@ impl Parsable for AppLogJournalKind {
                     |(asset_id, user_id, liquidity)| AppLogJournalKind::RegisterAsset {
                         asset_id,
                         user_id,
-                        liquidity,  // теперь это NonZeroU32
+                        liquidity, // теперь это NonZeroU32
                     },
                 ),
                 map(
@@ -1333,7 +1368,7 @@ impl Parsable for AppLogJournalKind {
                 ),
                 map(
                     preceded(strip_whitespace(tag("WithdrawCash")), UserCash::parser()),
-                    AppLogJournalKind::WithdrawCash,  // было: DepositCash (баг копипаста)
+                    AppLogJournalKind::WithdrawCash, // было: DepositCash (баг копипаста)
                 ),
                 map(
                     preceded(strip_whitespace(tag("BuyAsset")), UserBacket::parser()),
@@ -1346,7 +1381,8 @@ impl Parsable for AppLogJournalKind {
             ),
         )
     }
-}impl Parsable for AppLogKind {
+}
+impl Parsable for AppLogKind {
     type Parser = StripWhitespace<
         Preceded<
             Tag,
@@ -1392,21 +1428,20 @@ impl Parsable for LogLine {
     type Parser = Map<
         All<(
             <LogKind as Parsable>::Parser,
-            StripWhitespace<Preceded<Tag, stdp::U32Any>>,  // U32 → U32Any
+            StripWhitespace<Preceded<Tag, stdp::U32Any>>, // U32 → U32Any
         )>,
-        fn((LogKind, u32)) -> Self,  // ← теперь типы совпадают
+        fn((LogKind, u32)) -> Self, // ← теперь типы совпадают
     >;
     fn parser() -> Self::Parser {
         map(
             all2(
                 LogKind::parser(),
-                strip_whitespace(preceded(tag("requestid="), stdp::U32Any)),  //  
+                strip_whitespace(preceded(tag("requestid="), stdp::U32Any)),
             ),
             |(kind, request_id)| LogLine { kind, request_id },
         )
     }
 }
-
 
 /// Парсит одну строку лога
 pub fn parse_log_line(input: &str) -> Result<(&str, LogLine), ()> {
@@ -1416,16 +1451,17 @@ pub fn parse_log_line(input: &str) -> Result<(&str, LogLine), ()> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::num::NonZeroU32;
+    use std::num::{NonZeroI32, NonZeroU32};
 
     #[test]
     fn test_u32() {
-        assert_eq!(stdp::U32.parse("411"), Ok(("", NonZeroU32::new(411).unwrap())));
-        assert_eq!(stdp::U32.parse("411ab"), Ok(("ab", NonZeroU32::new(411).unwrap())));
+        let nz = |x: u32| NonZeroU32::new(x).unwrap();
+        assert_eq!(stdp::U32.parse("411"), Ok(("", nz(411))));
+        assert_eq!(stdp::U32.parse("411ab"), Ok(("ab", nz(411))));
         assert_eq!(stdp::U32.parse(""), Err(()));
         assert_eq!(stdp::U32.parse("-3"), Err(()));
-        assert_eq!(stdp::U32.parse("0x03"), Ok(("", NonZeroU32::new(0x3).unwrap())));
-        assert_eq!(stdp::U32.parse("0"), Err(()));  // ноль теперь ошибка
+        assert_eq!(stdp::U32.parse("0x03"), Ok(("", nz(0x3))));
+        assert_eq!(stdp::U32.parse("0"), Err(())); // ноль теперь ошибка
         assert_eq!(stdp::U32.parse("0x0"), Err(())); // ноль теперь ошибка
     }
 
@@ -1443,10 +1479,10 @@ mod test {
 
     #[test]
     fn test_u32_any() {
-        assert_eq!(stdp::U32Any.parse("0"), Ok(("", 0)));      // ноль допустим
+        assert_eq!(stdp::U32Any.parse("0"), Ok(("", 0))); // ноль допустим
         assert_eq!(stdp::U32Any.parse("411"), Ok(("", 411)));
         assert_eq!(stdp::U32Any.parse("411ab"), Ok(("ab", 411)));
-        assert_eq!(stdp::U32Any.parse("0x0"), Ok(("", 0)));    // hex-ноль допустим
+        assert_eq!(stdp::U32Any.parse("0x0"), Ok(("", 0))); // hex-ноль допустим
         assert_eq!(stdp::U32Any.parse(""), Err(()));
     }
 
@@ -1487,7 +1523,6 @@ mod test {
         assert_eq!(quoted_tag("key").parse(r#"key=value"#), Err(()));
     }
 
-
     #[test]
     fn test_strip_whitespace() {
         let nz = |x: u32| NonZeroU32::new(x).unwrap();
@@ -1498,7 +1533,7 @@ mod test {
         assert_eq!(strip_whitespace(tag("hello")).parse("hello"), Ok(("", ())));
         assert_eq!(
             strip_whitespace(stdp::U32).parse(" 42 answer"),
-            Ok(("answer", nz(42)))  // NonZeroU32
+            Ok(("answer", nz(42))) // NonZeroU32
         );
     }
 
@@ -1507,7 +1542,7 @@ mod test {
         let nz = |x: u32| NonZeroU32::new(x).unwrap();
         assert_eq!(
             delimited(tag("["), stdp::U32, tag("]")).parse("[0x32]"),
-            Ok(("", nz(0x32)))  // NonZeroU32
+            Ok(("", nz(0x32))) // NonZeroU32
         );
         assert_eq!(
             delimited(tag("["), stdp::U32, tag("]")).parse("[0x32] nice"),
@@ -1522,12 +1557,13 @@ mod test {
             Err(())
         );
     }
+
     #[test]
     fn test_key_value() {
         let nz = |x: u32| NonZeroU32::new(x).unwrap();
         assert_eq!(
             key_value("key", stdp::U32).parse(r#""key":32,"#),
-            Ok(("", nz(32)))  // NonZeroU32
+            Ok(("", nz(32))) // NonZeroU32
         );
         assert_eq!(key_value("key", stdp::U32).parse(r#"key:32,"#), Err(()));
         assert_eq!(key_value("key", stdp::U32).parse(r#""key":32"#), Err(()));
@@ -1542,7 +1578,7 @@ mod test {
         let nz = |x: u32| NonZeroU32::new(x).unwrap();
         assert_eq!(
             list(stdp::U32).parse("[1,2,3,4,]"),
-            Ok(("", vec![nz(1), nz(2), nz(3), nz(4)]))  // Vec<NonZeroU32>
+            Ok(("", vec![nz(1), nz(2), nz(3), nz(4)])) // Vec<NonZeroU32>
         );
         assert_eq!(
             list(stdp::U32).parse(" [ 1 , 2 , 3 , 4 , ] nice"),
@@ -1551,6 +1587,7 @@ mod test {
         assert_eq!(list(stdp::U32).parse("1,2,3,4,"), Err(()));
         assert_eq!(list(stdp::U32).parse("[]"), Ok(("", vec![])));
     }
+
     #[test]
     fn test_authdata() {
         let s = "30c305825b900077ae7f8259c1c328aa3e124a07f3bfbbf216dfc6e308beea6e474b9a7ea6c24d003a6ae4fcf04a9e6ef7c7f17cdaa0296f66a88036badcf01f053da806fad356546349deceff24621b895440d05a715b221af8e9e068073d6dec04f148175717d3c2d1b6af84e2375718ab4a1eba7e037c1c1d43b4cf422d6f2aa9194266f0a7544eaeff8167f0e993d0ea6a8ddb98bfeb8805635d5ea9f6592fd5297e6f83b6834190f99449722cd0de87a4c122f08bbe836fd3092e5f0d37a3057e90f3dd41048da66cad3e8fd3ef72a9d86ecd9009c2db996af29dc62af5ef5eb04d0e16ce8fcecba92a4a9888f52d5d575e7dbc302ed97dbf69df15bb4f5c5601d38fbe3bd89d88768a6aed11ce2f95a6ad30bb72e787bfb734701cea1f38168be44ea19d3e98dd3c953fdb9951ac9c6e221bb0f980d8f0952ac8127da5bda7077dd25ffc8e1515c529f29516dacec6be9c084e6c91698267b2aed9038eca5ebafad479c5fb17652e25bb5b85586fae645bd7c3253d9916c0af65a20253412d5484ac15d288c6ca8823469090ded5ce0975dada63653797129f0e926af6247b457b067db683e37d848e0acf30e5602b78f1848e8da4b640ed08b75f3519a40ec96b2be964234beab37759504376c6e5ebfacdc57e4c7a22cf1e879d7bde29a2dca5fe20420215b59d102fd016606c533e8e36f7da114910664bade9b295d9043a01bc0dc4d8abbc16b1cec7789d89e699ad99dae597c7f10d6f047efc011d67444695cb8e6e8b3dba17ccc693729d01312d0f12a3fc76e12c2e4984af5cb3049b9d8a13124a1f770e96bae1fb153ba4c91bea4fae6f03010275d5a9b14012bdd678e037934dc6762005de54b32a7684e03060d5cc80378e9bef05b8f0692202944401bd06e4553e4490a0e57c5a72fc8abb1f714e22ea950fb2f1de284d6ff3da435954de355c677f60db4252a510919cbe7dadfed0441cf125fd8894753af8114f2ddacb75c3daa460920fc47d285e59fe9110e4151fcef03fa246cd2dd9a4d573e1dbbda1c6968cf4f546289b95ce1bf0a55eea6531382826d4002bc46bf441ce16056d42b5a2079e299e3191c23a7604cde03de6081e06f93cfe632c9a6088cd328662d47a4954934832df5b5f3765dbe136114c73c55cb7ce639e5d40d1d1d8f540d3c8e1bc7423f032c0da5264353468f009c973eec0448e41f9289e8d9dadc68da77d3c3ab3a6477d44024f21fba0bd4477d81c6027657527aa0413b45f417cb7b3beea835a1d5d795414d38156324cb5c1303e9924dbe40cd497c4c23c221cb912058c939bea8b79b3fea360fecaa83375a9a84e338d9e863e8021ad2df4430b8dea0c1714e1bdc478f559705549ad738453ab65c0ffcc8cf0e3bafaf4afad75ecc4dfad0de0cfe27d50d656456ea6c361b76508357714079424";
@@ -1606,59 +1643,56 @@ mod test {
 
     #[test]
     fn test_backet() {
+        let nz = |x: u32| NonZeroU32::new(x).unwrap();
         assert_eq!(
             Backet::parser().parse(r#"Backet{"asset_id":"usd","count":42,}"#),
             Ok((
                 "",
                 Backet {
                     asset_id: "usd".into(),
-                    count: NonZeroU32::new(42).unwrap()  // используем NonZeroU32
+                    count: nz(42) // используем NonZeroU32
+                }
+            ))
+        );
+        assert_eq!(
+            Backet::parser().parse(r#"Backet{"count":42,"asset_id":"usd",}"#),
+            Ok((
+                "",
+                Backet {
+                    asset_id: "usd".into(),
+                    count: nz(42)
                 }
             ))
         );
     }
 
-        #[test]
-        fn test_log_kind() {
-            let nz = |x: u32| NonZeroU32::new(x).unwrap();
-            
-            assert_eq!(
-                LogKind::parser().parse(r#"System::Error NetworkError "url unknown""#),
-                Ok((
-                    "",
-                    LogKind::System(SystemLogKind::Error(SystemLogErrorKind::NetworkError(
-                        "url unknown".into()
-                    )))
-                ))
-            );
+    #[test]
+    fn test_log_kind() {
+        let nz = |x: u32| NonZeroU32::new(x).unwrap();
+        assert_eq!(
+            LogKind::parser().parse(r#"System::Error NetworkError "url unknown""#),
+            Ok((
+                "",
+                LogKind::System(SystemLogKind::Error(SystemLogErrorKind::NetworkError(
+                    "url unknown".into()
+                )))
+            ))
+        );
 
-            assert_eq!(
-                LogKind::parser().parse(
-                    r#"App::Journal CreateUser {"user_id": "Steeve", "authorized_capital": 10000,}"#
-                ),
-                Ok((
-                    "",
-                    LogKind::App(AppLogKind::Journal(AppLogJournalKind::CreateUser {
-                        user_id: "Steeve".into(),
-                        authorized_capital: nz(10_000),  // NonZeroU32
-                    }))
-                ))
-            );
+        assert_eq!(
+            LogKind::parser().parse(
+                r#"App::Journal CreateUser {"user_id": "Steeve", "authorized_capital": 10000,}"#
+            ),
+            Ok((
+                "",
+                LogKind::App(AppLogKind::Journal(AppLogJournalKind::CreateUser {
+                    user_id: "Steeve".into(),
+                    authorized_capital: nz(10_000), // NonZeroU32
+                }))
+            ))
+        );
 
-            assert_eq!(
-                LogKind::parser().parse(r#"App::Journal BuyAsset UserBacket{"user_id": "Steeve", "backet": Backet{"asset_id":"bayc","count":1,},}"#),
-                Ok((
-                    "",
-                    LogKind::App(AppLogKind::Journal(AppLogJournalKind::BuyAsset(
-                        UserBacket {
-                            user_id: "Steeve".into(),
-                            backet: Backet {
-                                asset_id: "bayc".into(),
-                                count: nz(1),  // NonZeroU32
-                            }
-                        }
-                    )))
-                ))
-            );
-        }
+        assert_eq!(LogKind::parser().parse(r#"App::Journal BuyAsset UserBacket{"user_id": "Steeve", "backet": Backet{"asset_id":"bayc","count":1,},}"#), 
+            Ok(("", LogKind::App(AppLogKind::Journal(AppLogJournalKind::BuyAsset(UserBacket{user_id: "Steeve".into(), backet: Backet{asset_id: "bayc".into(),count: nz(1)}}))))));
+    }
 }
