@@ -1,0 +1,36 @@
+from ubuntu:24.04
+run  apt update 
+run apt install curl -y
+
+run curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# run . "$HOME/.cargo/env"
+SHELL ["/bin/bash", "-c"]
+CMD ["/bin/bash"]
+run /root/.cargo/bin/cargo -V
+run apt install build-essential pkg-config libssl-dev -y
+run /root/.cargo/bin/rustup update stable
+# run /root/.cargo/bin/cargo install --git https://github.com/coral-xyz/anchor --tag v0.32.1 anchor-cli --jobs 2
+
+run /root/.cargo/bin/cargo install --locked cargo-binstall
+#  run /root/.cargo/bin/cargo install --locked --git https://github.com/coral-xyz/anchor --tag v0.32.1 anchor-cli --jobs 2
+run /root/.cargo/bin/cargo binstall anchor-cli --version 0.32.1
+run /root/.cargo/bin/cargo binstall cargo-build-sbf
+run /root/.cargo/bin/cargo-build-sbf --install-only
+env DEBIAN_FRONTEND=noninteractive
+run echo "Europe/Moscow" | tee /etc/timezone
+# run dpkg-reconfigure -f noninteractive
+run ln -sf /usr/share/zoneinfo/Europe/Moscow /etc/localtime
+
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libavformat-dev \
+    libavcodec-dev \
+    libavdevice-dev \
+    libavutil-dev \
+    libswscale-dev \
+    libswresample-dev \
+    libavfilter-dev \
+    clang \
+    && rm -rf /var/lib/apt/lists/*
+# cargo binstall anchor-cli --version 0.32.1
+#run /root/.cargo/bin/cargo binstall metadata
