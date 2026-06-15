@@ -23,3 +23,16 @@ ldd (Ubuntu GLIBC 2.35-0ubuntu3.13) 2.35
 ```sh
 docker run -it -v $(pwd)/rust-solana-launchpad-task:/rust-solana-launchpad-task -w /rust-solana-launchpad-task launchpad-runtime bash
  ```
+
+
+# Шаг 1. Починить program
+
+Обновили docker-файл , установив yarn - зависимости 
+
+Внутри нового контейнера выполяем: 
+```sh
+cd program
+yarn install
+anchor build
+ yarn run ts-mocha -p ./tsconfig.json -t 1000000 "tests/**/*.ts"
+```

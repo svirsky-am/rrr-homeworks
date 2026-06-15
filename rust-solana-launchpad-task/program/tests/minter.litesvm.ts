@@ -167,9 +167,9 @@ describe("token_minter (LiteSVM)", () => {
     assertSuccess(res);
 
     const treasuryAfter = svm.getBalance(treasury.publicKey) ?? BigInt(0);
-    // TODO(student): this formula is intentionally broken.
-    // The fee should get smaller when SOL/USD price gets larger.
-    const expectedFee = PRICE.mul(new BN(anchor.web3.LAMPORTS_PER_SOL)).div(FEE_USD);
+    // Исправлено: fee_lamports = mint_fee_usd * LAMPORTS_PER_SOL / price
+    // Чем выше цена SOL, тем меньше лампортов нужно заплатить за фиксированную USD-комиссию.
+    const expectedFee = FEE_USD.mul(new BN(anchor.web3.LAMPORTS_PER_SOL)).div(PRICE);
     expect(treasuryAfter - treasuryBefore).to.eq(BigInt(expectedFee.toString()));
 
     const mintAcct = svm.getAccount(mintKeypair.publicKey);

@@ -1,2 +1,6 @@
 test-ledger
 backend/.env
+node_modules
+package.json
+program/package.json
+program/yarn.lock

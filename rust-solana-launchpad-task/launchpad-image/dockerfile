@@ -31,6 +31,37 @@ RUN apt-get update && apt-get install -y \
     libswresample-dev \
     libavfilter-dev \
     clang \
+    git \
     && rm -rf /var/lib/apt/lists/*
 # cargo binstall anchor-cli --version 0.32.1
 #run /root/.cargo/bin/cargo binstall metadata
+
+ENV NODE_VERSION=24.16.0
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.5/install.sh | bash
+ENV NVM_DIR=/root/.nvm
+RUN . "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION}
+RUN . "$NVM_DIR/nvm.sh" && nvm use v${NODE_VERSION}
+RUN . "$NVM_DIR/nvm.sh" && nvm alias default v${NODE_VERSION}
+ENV PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
+# RUN /root/.nvm/versions/node/v${NODE_VERSION}/bin/npm install -g yarn
+RUN corepack enable && corepack prepare yarn@stable --activate
+# Рабочая директория для JS-зависимостей
+WORKDIR /app
+
+# Инициализация и установка зависимостей
+RUN yarn init -y && \
+    yarn add -D \
+        @coral-xyz/anchor@^0.32.1 \
+        @solana/web3.js@^1.95.0 \
+        @solana/spl-token@^0.4.0 \
+        litesvm@^0.3.0 \
+        @types/bn.js \
+        @types/chai \
+        @types/mocha \
+        chai \
+        mocha \
+        ts-node \
+        typescript
+
+# Копируем проект и собираем
+WORKDIR /workspace
