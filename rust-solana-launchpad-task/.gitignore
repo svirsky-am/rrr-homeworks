@@ -4,3 +4,4 @@ node_modules
 package.json
 program/package.json
 program/yarn.lock
+.yarn

@@ -11,3 +11,4 @@ output
 flamegraph.svg
 perf.data*
 .staff
+test-ledger/*

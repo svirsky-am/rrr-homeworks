@@ -1,3 +1,4 @@
 is-not-broken-app/artifacts/**/*.csv filter=lfs diff=lfs merge=lfs -text
 is-not-broken-app/artifacts/committed/*.svg filter=lfs diff=lfs merge=lfs -text
 is-not-broken-app/artifacts/committed/*.png filter=lfs diff=lfs merge=lfs -text
+artifacts/*.png filter=lfs diff=lfs merge=lfs -text

@@ -30,21 +30,25 @@ deploy-oracle-devnet: build
 
 deploy-minter-devnet: build
 	cd program && anchor deploy --program-name token_minter --provider.cluster devnet
-
+	
 # Инициализация оракула и минтера (localnet по умолчанию)
 init:
-	cd program && node scripts/init-local.js
+	cd program && node scripts/init-local.cjs
 
 # Инициализация на devnet (после make deploy-devnet)
 init-devnet:
-	cd program && RPC_URL=https://api.devnet.solana.com node scripts/init-local.js
+	cd program && RPC_URL=https://api.devnet.solana.com node scripts/init-local.cjs
 
 # Localnet: деплой только оракула или только минтера (сначала make validator)
 deploy-oracle: build
-	cd program && anchor deploy --program-name sol_usd_oracle --provider.cluster localnet
+	cd program && anchor deploy --program-name sol_usd_oracle --provider.cluster http://172.17.0.1:8899
+# 	cd program && anchor deploy --program-name sol_usd_oracle --provider.cluster localnet
 
 deploy-minter: build
-	cd program && anchor deploy --program-name token_minter --provider.cluster localnet
+	cd program && anchor deploy --program-name token_minter --provider.cluster http://172.17.0.1:8899
+#	cd program && anchor deploy --program-name token_minter --provider.cluster localnet
+
+	
 
 # Backend для localnet (читает backend/.env; нужны SOLANA_RPC_HTTP, SOLANA_RPC_WS)
 backend:
