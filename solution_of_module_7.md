@@ -13,7 +13,8 @@ make: *** [Makefile:18: build] Error 1
 ldd (Ubuntu GLIBC 2.35-0ubuntu3.13) 2.35
 ```
 
-Поэтому запускаем в docker:
+Поэтому запускаем в docker.
+
 Соберем докер образ на базе ubuntu 24:
 
 ```sh
@@ -64,11 +65,11 @@ node program/scripts/get-oracle-pda.cjs
 docker exec -it launchpad-runtime bash
 cat ~/.config/solana/id.json | node -e "console.log(Buffer.from(JSON.parse(require('fs').readFileSync(0))).toString('base64'))"
 ```
+## Настройка валидатора
 На хосте запускаем:
 ```sh
 solana-test-validator 
 ```
-
 Получаем адрес докер бриджа через traceroute:
 ```sh
 traceroute 8.8.8.8 
@@ -87,7 +88,7 @@ solana airdrop 100
 ```sh 
 docker exec -it launchpad bash 
 ```
-
+## Собираем so для деплоя в валидатор
 Получаем ключи от приложений для сборки либ:
 ```sh 
 solana address -k target/deploy/sol_usd_oracle-keypair.json
@@ -100,44 +101,37 @@ anchor build
 # Program Id: BkdrrqR4RrCB6m5YhMmWtjHpzuFPhdrvoA9x2tPFsWfj  sol_usd_oracle
 
 ```
-
-Выполняем деплой в локальную тестовую сеть:
+## Выполняем деплой в локальную тестовую сеть
 ```sh 
 # solana airdrop 100
 anchor deploy --program-name sol_usd_oracle --provider.cluster http://172.17.0.1:8899 # Idl account created: amr1tUCauWM2VkdzoTNqFC7FDSbUF1djuijqiE4andX
 anchor deploy --program-name token_minter --provider.cluster http://172.17.0.1:8899 # Idl account created: GraXfBYuPthVgJQVa9JpL2cDxQSiutnFrAfWrtfPKcMx
 ```
-Запускаем js-тесты:
+## Запускаем js-тесты
 ```sh
 yarn install
  yarn run ts-mocha -p ./tsconfig.json -t 1000000 "tests/**/*.ts"
 ```
 
-
+## Инициалиазция аккаунтов
 Через тест создаем аккаунты программ:
 ```sh
-
 anchor test  --provider.cluster http://172.17.0.1:8899
-
 ```
-
 Проверка аккаунтов:
 ```sh
  cat target/idl/sol_usd_oracle.json | jq '.instructions[] | {name: .name, accounts: .accounts[].name}'
 cat target/idl/sol_usd_oracle.json | jq '.instructions[0]'
-
 ```
-
-Но тесты, что-то не скоздают аккаунтов и PDA. Поэтому попробуем так:
-Их создание:
+Тесты что-то не скоздают аккаунтов и PDA. 
+Поэтому попробуем так:
 ```sh
 npm install @coral-xyz/anchor@0.32.1
 cd program
 #node initialize_oracle.js
  RPC_URL=http://172.17.0.1:8899 node scripts/init-local.js
 ```
-результат
-
+Результат:
 ```
 Initializing oracle...
   tx: NS4Vdmh4VPvkSGmDuaNkrqTt9Ju9eNnRMfevvLSmqcaYG2rpeBsATTfuxoJhtV9AJ2MtQYVv2iEcwMoYGfT8ehD
@@ -147,15 +141,15 @@ Initializing minter (treasury = wallet)...
   tx: 3UFe4NDTgcbu5b2fAS1sMMjP61VoYcX3dvBcLBM3F83LR47irjX68wM78WQgdhLt68fwJWwP7prZ5pW1joHU12yA
 Done. Add to backend/.env:
 ORACLE_STATE_PUBKEY=Athcok1p9jdYUrsVs4g4S2kAy5ZQe7jGHg49t3pHQUHr
-
 ```
-Запускаем бекженд
+## Запускаем бекженд
 ```sh
 cd backend
 . .env
 cargo run
 ```
-Имеются ошибки компиляции старого пакета `inotify`
+## Запускаем фронтэнд.
+Воспользовавшись `npm run dev` получаем ошибки компиляции старого пакета `inotify`
 ```
 npm error /root/.cache/node-gyp/24.16.0/include/node/v8-value.h:399:44: note:   candidate expects 1 argument, 0 provided
 npm error make: *** [inotify.target.mk:111: Release/obj.target/inotify/src/bindings.o] Error 1
@@ -163,7 +157,6 @@ npm error gyp ERR! build error
 npm error gyp ERR! stack Error: `make` failed with exit code: 2
 ```
 
-Запускаем фронтэнд
  ```sh
 cd frontend 
 nvm install 22.13.1
@@ -177,7 +170,7 @@ yarn install
 yarn run dev
  ```
 
-Получаем приватную часть ключа для baskpack
+Получаем приватную часть ключа для baskpack:
 ```sh
 python3 -m venv ./.venv
  chmod +x ./.venv/bin/activate
@@ -185,27 +178,26 @@ python3 -m venv ./.venv
 pip install base58 solders
 python3 ./cut_private_key.py 
 ```
-Отминтим токен в UI 
+Отминтим токен в UI:
+
 ![Результат минта](./artifacts/mod7_proof_test_net_ui.png)
 
-Проверка информации о токене
+Проверка информации о токене:
 ```sh
 spl-token accounts
 solana account GfFRvKjyHHn2GWJLyTwGkEa8a1PWnKMiNYLRipJVUM1B
 ```
 ![Проверка токена](./artifacts/mod7_proof_spl_token.png)
 
-
-
-
-
 # Шаг 4: Деплой в devnet
+## Перенастройка на devnet
 Переключаемся на devnet:
 ```sh
 solana config set --url https://api.devnet.solana.com 
 ```
 
-Запросим sol  на https://faucet.solana.com/ для `867EYq4TfPM8SQjGoe7RW4j5DJzSG1kb31HwabcudRh5`
+Запросим sol  на https://faucet.solana.com/ для `867EYq4TfPM8SQjGoe7RW4j5DJzSG1kb31HwabcudRh5`.
+И потом еще 5. Итого 10.
 Деполим приложения в devnet:
 ```sh
 pushd program
@@ -252,13 +244,15 @@ solana confirm -v CQyamQWBdv23uEQMrrW9b7m5kZcz9ntwKkwery1k6BcSTpHfieQVebM24MNX9o
 ![Успешный минт](./artifacts/mod7_proof_mint_token_on_dev_net.png)
 
 Адрес минта: `D6WZLez4yNwm4XmVZWbfqKNeJb5Wve27AbzRrnTnQDcR`
-
-https://explorer.solana.com/tx/4EdwrWJEosvdyyajbENHiYimwJiCpJ8kM6kifUQX2i9EWk75rf6o9ZYHHtQhKMFydEbVAmyc7arqummYJSFoRh2H?cluster=devnet
-
-https://explorer.solana.com/address/D6WZLez4yNwm4XmVZWbfqKNeJb5Wve27AbzRrnTnQDcR?cluster=devnet
+ID транзации: `4EdwrWJEosvdyyajbENHiYimwJiCpJ8kM6kifUQX2i9EWk75rf6o9ZYHHtQhKMFydEbVAmyc7arqummYJSFoRh2H`
 
 
+пруф 1: https://explorer.solana.com/tx/4EdwrWJEosvdyyajbENHiYimwJiCpJ8kM6kifUQX2i9EWk75rf6o9ZYHHtQhKMFydEbVAmyc7arqummYJSFoRh2H?cluster=devnet
 
+![Транзакция](./artifacts/mod7_transaction.png)
+
+пруф 2: https://explorer.solana.com/address/D6WZLez4yNwm4XmVZWbfqKNeJb5Wve27AbzRrnTnQDcR?cluster=devnet
+![токен](./artifacts/mod7_token.png)
 
 
 <!-- https://emojio.ru/images/apple-b/1f921.png -->
