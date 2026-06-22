@@ -189,7 +189,7 @@ solana account GfFRvKjyHHn2GWJLyTwGkEa8a1PWnKMiNYLRipJVUM1B
 ```
 ![Проверка токена](./artifacts/mod7_proof_spl_token.png)
 
-# Шаг 4: Деплой в devnet
+# Шаг 4-6: Деплой в devnet
 ## Перенастройка на devnet
 Переключаемся на devnet:
 ```sh
