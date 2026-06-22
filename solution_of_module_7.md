@@ -202,9 +202,63 @@ solana account GfFRvKjyHHn2GWJLyTwGkEa8a1PWnKMiNYLRipJVUM1B
 # Шаг 4: Деплой в devnet
 Переключаемся на devnet:
 ```sh
-
 solana config set --url https://api.devnet.solana.com 
 ```
+
+Запросим sol  на https://faucet.solana.com/ для `867EYq4TfPM8SQjGoe7RW4j5DJzSG1kb31HwabcudRh5`
+Деполим приложения в devnet:
+```sh
+pushd program
+  anchor deploy --program-name sol_usd_oracle --provider.cluster devnet
+  anchor deploy --program-name token_minter --provider.cluster devnet
+  RPC_URL=https://api.devnet.solana.com node scripts/init-local.js
+popd
+```
+Перезапускаем бекэнд для devnet:
+```sh
+pushd backend
+  export SOLANA_RPC_HTTP=https://api.devnet.solana.com
+  export SOLANA_RPC_WS=wss://api.devnet.solana.com
+  cargo run
+popd
+```
+Перезапускаем фронт для devnet:
+```sh
+pushd backend
+  export SOLANA_RPC_HTTP=https://api.devnet.solana.com
+  export SOLANA_RPC_WS=wss://api.devnet.solana.com
+  cargo run
+popd
+```
+
+
+Транзакция повисла. Проверим статус:
+```sh
+solana transaction-history $(solana address)
+solana confirm -v 2ihhje5bPT1Y1wTyzsgDPQRPuLr5EZG7ZWYkq4Yb9zQHj5B95pJvwQ3oeT6wzVaEvsFJuWrZKhJh4xXaBCcWdJjM
+
+
+solana transaction-history DJpBzQRWtuhnqFpjS9xVELb29wCkRNVeT7ZKnq8uHEyp
+solana confirm -v 3K8yUFmhf2wCmvkNHH3Qm5AEfYTPLhymiUBDwN86Dujp2pyYCtpkGw5wA28Z2BRGa7KpTqgMVjryT7xaPsnaX55q
+
+
+solana transaction-history Athcok1p9jdYUrsVs4g4S2kAy5ZQe7jGHg49t3pHQUHr
+solana confirm -v CQyamQWBdv23uEQMrrW9b7m5kZcz9ntwKkwery1k6BcSTpHfieQVebM24MNX9oFR9c6o2uD4WafMAUVMBnDv5NB
+```
+
+Что-то не проходит.
+Меняем адрес в backpack на `https://api.devnet.solana.com`.
+Пробуем заминтится еще раз:
+![Успешный минт](./artifacts/mod7_proof_mint_token_on_dev_net.png)
+
+Адрес минта: `D6WZLez4yNwm4XmVZWbfqKNeJb5Wve27AbzRrnTnQDcR`
+
+https://explorer.solana.com/tx/4EdwrWJEosvdyyajbENHiYimwJiCpJ8kM6kifUQX2i9EWk75rf6o9ZYHHtQhKMFydEbVAmyc7arqummYJSFoRh2H?cluster=devnet
+
+https://explorer.solana.com/address/D6WZLez4yNwm4XmVZWbfqKNeJb5Wve27AbzRrnTnQDcR?cluster=devnet
+
+
+
 
 
 <!-- https://emojio.ru/images/apple-b/1f921.png -->
