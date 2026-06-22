@@ -103,6 +103,7 @@ anchor build
 
 Выполняем деплой в локальную тестовую сеть:
 ```sh 
+# solana airdrop 100
 anchor deploy --program-name sol_usd_oracle --provider.cluster http://172.17.0.1:8899 # Idl account created: amr1tUCauWM2VkdzoTNqFC7FDSbUF1djuijqiE4andX
 anchor deploy --program-name token_minter --provider.cluster http://172.17.0.1:8899 # Idl account created: GraXfBYuPthVgJQVa9JpL2cDxQSiutnFrAfWrtfPKcMx
 ```
@@ -132,7 +133,21 @@ cat target/idl/sol_usd_oracle.json | jq '.instructions[0]'
 ```sh
 npm install @coral-xyz/anchor@0.32.1
 cd program
-node initialize_oracle.js
+#node initialize_oracle.js
+ RPC_URL=http://172.17.0.1:8899 node scripts/init-local.js
+```
+результат
+
+```
+Initializing oracle...
+  tx: NS4Vdmh4VPvkSGmDuaNkrqTt9Ju9eNnRMfevvLSmqcaYG2rpeBsATTfuxoJhtV9AJ2MtQYVv2iEcwMoYGfT8ehD
+Setting initial price...
+  tx: 63H8y6v8jtwfkSxbPR6BrzHRfzkKEkpTNAR3tEBJ3yDVUdmXTqVT5cPfpEYbMsjumRg6aWGSzTzjhzEfHfqAuDrC
+Initializing minter (treasury = wallet)...
+  tx: 3UFe4NDTgcbu5b2fAS1sMMjP61VoYcX3dvBcLBM3F83LR47irjX68wM78WQgdhLt68fwJWwP7prZ5pW1joHU12yA
+Done. Add to backend/.env:
+ORACLE_STATE_PUBKEY=Athcok1p9jdYUrsVs4g4S2kAy5ZQe7jGHg49t3pHQUHr
+
 ```
 Запускаем бекженд
 ```sh
@@ -161,6 +176,27 @@ npm install -g yarn
 yarn install
 yarn run dev
  ```
+
+Получаем приватную часть ключа для baskpack
+```sh
+python3 -m venv ./.venv
+ chmod +x ./.venv/bin/activate
+. ./.venv/bin/activate
+pip install base58 solders
+python3 ./cut_private_key.py 
+```
+Отминтим токен в UI 
+![Результат минта](./artifacts/mod7_proof_test_net_ui.png)
+
+Проверка информации о токене
+```sh
+spl-token accounts
+solana account GfFRvKjyHHn2GWJLyTwGkEa8a1PWnKMiNYLRipJVUM1B
+```
+![Проверка токена](./artifacts/mod7_proof_spl_token.png)
+
+
+
 
 
 # Шаг 4: Деплой в devnet

@@ -87,4 +87,4 @@ run curl --proto '=https' --tlsv1.2 -sSfL https://solana-install.solana.workers.
 
 RUN solana --version
 
-RUN apt install iputils-ping traceroute net-tools iproute2 jq -y
+RUN apt install iputils-ping traceroute net-tools iproute2 jq python3-venv pip -y
