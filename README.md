@@ -254,6 +254,7 @@ ID транзации: `4EdwrWJEosvdyyajbENHiYimwJiCpJ8kM6kifUQX2i9EWk75rf6o9ZYH
 пруф 2: https://explorer.solana.com/address/D6WZLez4yNwm4XmVZWbfqKNeJb5Wve27AbzRrnTnQDcR?cluster=devnet
 ![токен](./artifacts/mod7_token.png)
 
+# Правка замечаний ревью 1
 ## Минт токена 2 и 3
 токен 2
 https://explorer.solana.com/tx/67WdXb4CMcqNgrtki5g1x98ws43vefxvRQRFWdBFa8xZ9nU4q7gYVE7Svi86fDJndJcUjmGCfEcffjr2LeCAjzhs?cluster=devnet
@@ -267,5 +268,37 @@ https://explorer.solana.com/tx/5Wekoov1jpuqEMDxTD94azi2M5DXttxB3Wrhfk414RXpm5iVL
 Error: Error { request: Some(GetTokenAccountsByOwner), kind: Reqwest(reqwest::Error { kind: Request, url: "https://api.devnet.solana.com/", source: hyper_util::client::legacy::Error(Connect, ConnectError("dns error", Custom { kind: Uncategorized, error: "failed to lookup address information: Temporary failure in name resolution" })) }) }
 
 ```
+
+## Добавление проверки актуальности цены оракула
+Сборка и передеплой минтера
+```sh
+cd program
+anchor build
+anchor deploy --program-name token_minter --provider.cluster https://api.devnet.solana.com
+```
+Сборка прошла , но к можелению сеть не работает
+```
+(.venv) root@f36117dbc305:/rust-solana-launchpad-task/program# anchor deploy --program-name token_minter --provider.cluster https://api.devnet.solana.com
+Error: error sending request for url (https://api.devnet.solana.com/): error trying to connect: dns error: failed to lookup address information: Temporary failure in name resolution
+
+Caused by:
+    0: error sending request for url (https://api.devnet.solana.com/): error trying to connect: dns error: failed to lookup address information: Temporary failure in name resolution
+    1: error trying to connect: dns error: failed to lookup address information: Temporary failure in name resolution
+    2: dns error: failed to lookup address information: Temporary failure in name resolution
+    3: failed to lookup address information: Temporary failure in name resolution
+```
+
+Перезапустим backend с новым интервалом
+```sh
+cd /rust-solana-launchpad-task
+PRICE_POLL_INTERVAL_SEC=60 cargo run 
+```
+Сети нет. Проверить в девнете не получается
+```
+2026-06-24T07:45:08.879449Z ERROR backend: failed to fetch initial price err=error sending request for url (https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT): error trying to connect: dns error: failed to lookup address information: Temporary failure in name resolution
+```
+
+
+
 
 <!-- https://emojio.ru/images/apple-b/1f921.png -->

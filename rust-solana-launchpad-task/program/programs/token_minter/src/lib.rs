@@ -12,6 +12,9 @@ use sol_usd_oracle::{state::OracleState, PRICE_DECIMALS};
 
 pub const USD_DECIMALS: u8 = 6;
 pub const LAMPORTS_PER_SOL_U64: u64 = 1_000_000_000;
+/// Максимальное количество слотов, на которое цена оракула может быть устаревшей.
+/// Средний слот в Solana ≈ 400 мс, поэтому выставим 750 слотов ≈ 5 минут.
+pub const MAX_STALENESS: u64 = 750;
 
 declare_id!("DJpBzQRWtuhnqFpjS9xVELb29wCkRNVeT7ZKnq8uHEyp");
 
@@ -68,6 +71,13 @@ pub mod token_minter {
         require!(
             oracle_state.decimals == PRICE_DECIMALS,
             MinterError::OracleDecimalsMismatch
+        );
+
+        let current_slot = Clock::get()?.slot;
+        require!(
+            current_slot >= oracle_state.last_updated_slot
+                && current_slot - oracle_state.last_updated_slot <= MAX_STALENESS,
+            MinterError::OraclePriceStale
         );
 
         let fee_lamports = compute_fee_lamports(ctx.accounts.config.mint_fee_usd, oracle_state.price)?;
@@ -306,4 +316,6 @@ pub enum MinterError {
     InvalidMetadataPda,
     #[msg("Metaplex create metadata CPI failed")]
     MetadataCpiFailed,
+    #[msg("Oracle price is too stale")]
+    OraclePriceStale,
 }

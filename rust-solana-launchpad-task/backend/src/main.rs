@@ -21,7 +21,9 @@ use solana_sdk::{
 use tokio::time::interval;
 use tracing::{error, info, warn};
 
-const DEFAULT_PRICE_POLL_INTERVAL_SEC: u64 = 600; // 10 minutes; live price from Binance when MOCK_PRICE is not set
+// Если MAX_STALENESS = 750 слотов (~5 минут), то обновлять нужно хотя бы каждые 3-4 минуты
+const DEFAULT_PRICE_POLL_INTERVAL_SEC: u64 = 180; // 3 минуты
+
 
 #[derive(Clone)]
 struct Config {
