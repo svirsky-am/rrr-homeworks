@@ -254,5 +254,18 @@ ID транзации: `4EdwrWJEosvdyyajbENHiYimwJiCpJ8kM6kifUQX2i9EWk75rf6o9ZYH
 пруф 2: https://explorer.solana.com/address/D6WZLez4yNwm4XmVZWbfqKNeJb5Wve27AbzRrnTnQDcR?cluster=devnet
 ![токен](./artifacts/mod7_token.png)
 
+## Минт токена 2 и 3
+токен 2
+https://explorer.solana.com/tx/67WdXb4CMcqNgrtki5g1x98ws43vefxvRQRFWdBFa8xZ9nU4q7gYVE7Svi86fDJndJcUjmGCfEcffjr2LeCAjzhs?cluster=devnet
+https://explorer.solana.com/address/BuRhg5xBNG1S3Ctk8y5abMQcwr3R9CXCwSbCUBLxFhMY?cluster=devnet
+токен 3
+https://explorer.solana.com/tx/5Wekoov1jpuqEMDxTD94azi2M5DXttxB3Wrhfk414RXpm5iVL1NbRLRQGyUxP1fM1b19MTbjhC7oh1osZeCjYabW?cluster=devnet
+
+К сожалениею api dev net solana плохо работает из под vpn и с местными провайдерами (
+```
+(.venv) root@f36117dbc305:/rust-solana-launchpad-task/program# spl-token accounts
+Error: Error { request: Some(GetTokenAccountsByOwner), kind: Reqwest(reqwest::Error { kind: Request, url: "https://api.devnet.solana.com/", source: hyper_util::client::legacy::Error(Connect, ConnectError("dns error", Custom { kind: Uncategorized, error: "failed to lookup address information: Temporary failure in name resolution" })) }) }
+
+```
 
 <!-- https://emojio.ru/images/apple-b/1f921.png -->
